@@ -858,8 +858,25 @@ function NeonSlither() {
               <div className="text-7xl font-black tabular-nums" style={{ color: "#00f9ff", textShadow: "0 0 20px #00f9ff" }}>{score}</div>
             </div>
             {newBest && (
-              <div className="mb-6 py-3 bg-gradient-to-r from-yellow-400/20 to-fuchsia-500/20 border border-yellow-400/50 rounded-xl">
+              <div className="mb-4 py-3 bg-gradient-to-r from-yellow-400/20 to-fuchsia-500/20 border border-yellow-400/50 rounded-xl">
                 <div className="text-yellow-300 font-bold tracking-wider">★ NEW HIGH SCORE ★</div>
+              </div>
+            )}
+            {leaderboard.length > 0 && (
+              <div className="mb-4 bg-black/40 border border-cyan-400/20 rounded-2xl p-4 text-left">
+                <div className="text-[10px] tracking-[0.3em] text-cyan-300/80 mb-2">SCORE LOG</div>
+                <ol className="space-y-1 max-h-40 overflow-y-auto">
+                  {leaderboard.slice(0, 5).map((row, i) => {
+                    const mine = row.score === score && Math.abs(Date.now() - row.date) < 5000;
+                    return (
+                      <li key={row.date + "-" + i} className={`flex items-center justify-between text-xs font-mono tabular-nums ${mine ? "text-yellow-300" : ""}`}>
+                        <span className="w-6 text-gray-500">#{i + 1}</span>
+                        <span className="flex-1 truncate px-2">{row.name}</span>
+                        <span className="font-bold">{row.score}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
               </div>
             )}
             <div className="flex gap-3">
