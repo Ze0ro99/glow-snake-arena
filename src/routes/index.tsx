@@ -296,15 +296,83 @@ function NeonSlither() {
     const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY);
     const md = () => { stateRef.current.boost = true; if (stateRef.current.running) playSound("boost"); };
     const mu = () => { stateRef.current.boost = false; };
-    const tm = (e: TouchEvent) => { e.preventDefault(); if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY); };
-    const ts = (e: TouchEvent) => { e.preventDefault(); if (e.touches[0]) { onMove(e.touches[0].clientX, e.touches[0].clientY); stateRef.current.boost = true; if(stateRef.current.running) playSound("boost"); } };
-    const te = (e: TouchEvent) => { e.preventDefault(); stateRef.current.boost = false; };
+
+    // Touch state: first finger = instant boost + coarse steer.
+    // Second finger = precision joystick (relative offset from its anchor),
+    // giving fine-grained heading control while the first finger keeps boost on.
+    let precisionId: number | null = null;
+    let precisionAnchor: { x: number; y: number } | null = null;
+    let primaryId: number | null = null;
+
+    const ts = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (primaryId === null) {
+          primaryId = t.identifier;
+          // First touch: activate boost immediately and steer toward touch point
+          onMove(t.clientX, t.clientY);
+          stateRef.current.boost = true;
+          if (stateRef.current.running) playSound("boost");
+        } else if (precisionId === null) {
+          // Second touch: lock precision anchor at this finger's position
+          precisionId = t.identifier;
+          precisionAnchor = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+          setPrecisionMode(true);
+        }
+      }
+    };
+    const tm = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      for (let i = 0; i < e.touches.length; i++) {
+        const t = e.touches[i];
+        if (t.identifier === precisionId && precisionAnchor && stateRef.current.player) {
+          // Precision steering: small offsets from anchor map to heading,
+          // amplified around the player head for sub-pixel-accurate aiming.
+          const dx = (t.clientX - rect.left) - precisionAnchor.x;
+          const dy = (t.clientY - rect.top) - precisionAnchor.y;
+          if (dx * dx + dy * dy > 4) {
+            const w = window.innerWidth, h = window.innerHeight;
+            // Project a target far in the heading direction, centered on screen
+            const len = Math.hypot(dx, dy) || 1;
+            stateRef.current.pointer.x = w / 2 + (dx / len) * 400;
+            stateRef.current.pointer.y = h / 2 + (dy / len) * 400;
+          }
+        } else if (t.identifier === primaryId && precisionId === null) {
+          // Single finger drag still steers coarsely
+          onMove(t.clientX, t.clientY);
+        }
+      }
+    };
+    const te = (e: TouchEvent) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === precisionId) {
+          precisionId = null;
+          precisionAnchor = null;
+          setPrecisionMode(false);
+        }
+        if (t.identifier === primaryId) {
+          primaryId = null;
+          stateRef.current.boost = false;
+        }
+      }
+      // If primary lifted but precision still down, promote precision to primary boost
+      if (primaryId === null && precisionId !== null) {
+        stateRef.current.boost = true;
+      }
+    };
+
     window.addEventListener("mousemove", mm);
     window.addEventListener("mousedown", md);
     window.addEventListener("mouseup", mu);
     canvas.addEventListener("touchmove", tm, { passive: false });
     canvas.addEventListener("touchstart", ts, { passive: false });
     canvas.addEventListener("touchend", te, { passive: false });
+    canvas.addEventListener("touchcancel", te, { passive: false });
     return () => {
       window.removeEventListener("mousemove", mm);
       window.removeEventListener("mousedown", md);
@@ -312,6 +380,7 @@ function NeonSlither() {
       canvas.removeEventListener("touchmove", tm);
       canvas.removeEventListener("touchstart", ts);
       canvas.removeEventListener("touchend", te);
+      canvas.removeEventListener("touchcancel", te);
     };
   }, []);
 
