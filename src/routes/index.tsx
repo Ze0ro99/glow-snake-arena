@@ -273,6 +273,15 @@ function NeonSlither() {
       localStorage.setItem("neonSlither4DBest", String(finalLen));
       setNewBest(true);
     }
+    // Update leaderboard (top 10)
+    try {
+      const name = (playerName || "PLAYER").slice(0, 12).toUpperCase();
+      const next = [...leaderboard, { score: finalLen, date: Date.now(), name }]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+      setLeaderboard(next);
+      localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next));
+    } catch {}
     setTimeout(() => setScreen("over"), 800);
   };
 
