@@ -138,10 +138,19 @@ function NeonSlither() {
   const [best, setBest] = useState(0);
   const [paused, setPaused] = useState(false);
   const [newBest, setNewBest] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<{ score: number; date: number; name: string }[]>([]);
+  const [playerName, setPlayerName] = useState<string>("PLAYER");
+  const [precisionMode, setPrecisionMode] = useState(false);
 
   useEffect(() => {
     const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
     setBest(stored);
+    try {
+      const lb = JSON.parse(localStorage.getItem("neonSlither4DLeaderboard") || "[]");
+      if (Array.isArray(lb)) setLeaderboard(lb);
+    } catch {}
+    const n = localStorage.getItem("neonSlither4DName");
+    if (n) setPlayerName(n);
   }, []);
 
   // Resize
