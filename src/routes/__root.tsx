@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "NEON SLITHER 4D" },
+      { name: "description", content: "Neon Slither 4D is a mobile-first, single-player game offering an advanced Snake.io experience." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "NEON SLITHER 4D" },
+      { property: "og:description", content: "Neon Slither 4D is a mobile-first, single-player game offering an advanced Snake.io experience." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "NEON SLITHER 4D" },
+      { name: "twitter:description", content: "Neon Slither 4D is a mobile-first, single-player game offering an advanced Snake.io experience." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/3493GwxtHjc5eSay9UFHVH8GKUq2/social-images/social-1782379050019-1000107407.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/3493GwxtHjc5eSay9UFHVH8GKUq2/social-images/social-1782379050019-1000107407.webp" },
     ],
     links: [
       {
