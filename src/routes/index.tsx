@@ -138,10 +138,19 @@ function NeonSlither() {
   const [best, setBest] = useState(0);
   const [paused, setPaused] = useState(false);
   const [newBest, setNewBest] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<{ score: number; date: number; name: string }[]>([]);
+  const [playerName, setPlayerName] = useState<string>("PLAYER");
+  const [precisionMode, setPrecisionMode] = useState(false);
 
   useEffect(() => {
     const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
     setBest(stored);
+    try {
+      const lb = JSON.parse(localStorage.getItem("neonSlither4DLeaderboard") || "[]");
+      if (Array.isArray(lb)) setLeaderboard(lb);
+    } catch {}
+    const n = localStorage.getItem("neonSlither4DName");
+    if (n) setPlayerName(n);
   }, []);
 
   // Resize
@@ -264,6 +273,15 @@ function NeonSlither() {
       localStorage.setItem("neonSlither4DBest", String(finalLen));
       setNewBest(true);
     }
+    // Update leaderboard (top 10)
+    try {
+      const name = (playerName || "PLAYER").slice(0, 12).toUpperCase();
+      const next = [...leaderboard, { score: finalLen, date: Date.now(), name }]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+      setLeaderboard(next);
+      localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next));
+    } catch {}
     setTimeout(() => setScreen("over"), 800);
   };
 
@@ -278,15 +296,83 @@ function NeonSlither() {
     const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY);
     const md = () => { stateRef.current.boost = true; if (stateRef.current.running) playSound("boost"); };
     const mu = () => { stateRef.current.boost = false; };
-    const tm = (e: TouchEvent) => { e.preventDefault(); if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY); };
-    const ts = (e: TouchEvent) => { e.preventDefault(); if (e.touches[0]) { onMove(e.touches[0].clientX, e.touches[0].clientY); stateRef.current.boost = true; if(stateRef.current.running) playSound("boost"); } };
-    const te = (e: TouchEvent) => { e.preventDefault(); stateRef.current.boost = false; };
+
+    // Touch state: first finger = instant boost + coarse steer.
+    // Second finger = precision joystick (relative offset from its anchor),
+    // giving fine-grained heading control while the first finger keeps boost on.
+    let precisionId: number | null = null;
+    let precisionAnchor: { x: number; y: number } | null = null;
+    let primaryId: number | null = null;
+
+    const ts = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (primaryId === null) {
+          primaryId = t.identifier;
+          // First touch: activate boost immediately and steer toward touch point
+          onMove(t.clientX, t.clientY);
+          stateRef.current.boost = true;
+          if (stateRef.current.running) playSound("boost");
+        } else if (precisionId === null) {
+          // Second touch: lock precision anchor at this finger's position
+          precisionId = t.identifier;
+          precisionAnchor = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+          setPrecisionMode(true);
+        }
+      }
+    };
+    const tm = (e: TouchEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      for (let i = 0; i < e.touches.length; i++) {
+        const t = e.touches[i];
+        if (t.identifier === precisionId && precisionAnchor && stateRef.current.player) {
+          // Precision steering: small offsets from anchor map to heading,
+          // amplified around the player head for sub-pixel-accurate aiming.
+          const dx = (t.clientX - rect.left) - precisionAnchor.x;
+          const dy = (t.clientY - rect.top) - precisionAnchor.y;
+          if (dx * dx + dy * dy > 4) {
+            const w = window.innerWidth, h = window.innerHeight;
+            // Project a target far in the heading direction, centered on screen
+            const len = Math.hypot(dx, dy) || 1;
+            stateRef.current.pointer.x = w / 2 + (dx / len) * 400;
+            stateRef.current.pointer.y = h / 2 + (dy / len) * 400;
+          }
+        } else if (t.identifier === primaryId && precisionId === null) {
+          // Single finger drag still steers coarsely
+          onMove(t.clientX, t.clientY);
+        }
+      }
+    };
+    const te = (e: TouchEvent) => {
+      e.preventDefault();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === precisionId) {
+          precisionId = null;
+          precisionAnchor = null;
+          setPrecisionMode(false);
+        }
+        if (t.identifier === primaryId) {
+          primaryId = null;
+          stateRef.current.boost = false;
+        }
+      }
+      // If primary lifted but precision still down, promote precision to primary boost
+      if (primaryId === null && precisionId !== null) {
+        stateRef.current.boost = true;
+      }
+    };
+
     window.addEventListener("mousemove", mm);
     window.addEventListener("mousedown", md);
     window.addEventListener("mouseup", mu);
     canvas.addEventListener("touchmove", tm, { passive: false });
     canvas.addEventListener("touchstart", ts, { passive: false });
     canvas.addEventListener("touchend", te, { passive: false });
+    canvas.addEventListener("touchcancel", te, { passive: false });
     return () => {
       window.removeEventListener("mousemove", mm);
       window.removeEventListener("mousedown", md);
@@ -294,6 +380,7 @@ function NeonSlither() {
       canvas.removeEventListener("touchmove", tm);
       canvas.removeEventListener("touchstart", ts);
       canvas.removeEventListener("touchend", te);
+      canvas.removeEventListener("touchcancel", te);
     };
   }, []);
 
@@ -682,6 +769,12 @@ function NeonSlither() {
               </div>
             </div>
           )}
+
+          {precisionMode && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none bg-black/50 border border-fuchsia-400/50 rounded-full px-4 py-1.5 text-[10px] tracking-[0.3em] font-bold text-fuchsia-200" style={{ boxShadow: "0 0 20px rgba(255,0,200,0.4)" }}>
+              ◎ PRECISION LOCK
+            </div>
+          )}
         </>
       )}
 
@@ -696,9 +789,19 @@ function NeonSlither() {
             <h1 className="text-5xl sm:text-7xl font-black tracking-tighter leading-none mb-6" style={{ color: "#ff00cc", textShadow: "0 0 20px #ff00cc, 0 0 40px #ff00cc, 0 0 60px rgba(255,0,200,0.5)" }}>
               SLITHER 4D
             </h1>
-            <p className="text-base sm:text-lg text-gray-300 mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-300 mb-6 leading-relaxed">
               Devour glowing energy. Out-slither 14 rivals.<br/>Become the apex serpent.
             </p>
+            <input
+              value={playerName}
+              onChange={(e) => {
+                const v = e.target.value.toUpperCase().slice(0, 12);
+                setPlayerName(v);
+                localStorage.setItem("neonSlither4DName", v);
+              }}
+              placeholder="YOUR HANDLE"
+              className="w-full mb-4 px-4 py-3 bg-black/40 border border-cyan-400/30 rounded-xl text-center font-bold tracking-widest text-cyan-200 placeholder-cyan-500/40 focus:outline-none focus:border-cyan-300"
+            />
             <button
               onClick={startGame}
               className="w-full px-8 py-5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black font-black text-lg sm:text-xl rounded-2xl tracking-wider hover:scale-105 active:scale-95 transition-transform"
@@ -706,17 +809,44 @@ function NeonSlither() {
             >
               ENTER THE NEON REALM
             </button>
-            <div className="mt-8 grid grid-cols-2 gap-3 text-left">
+            <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-cyan-300/70 mb-1">STEER</div>
-                <div className="text-xs text-gray-300">Move mouse / drag finger</div>
+                <div className="text-xs text-gray-300">Drag finger / move mouse</div>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-fuchsia-300/70 mb-1">BOOST</div>
-                <div className="text-xs text-gray-300">Hold click / hold touch</div>
+                <div className="text-xs text-gray-300">First tap = instant burst</div>
+              </div>
+              <div className="col-span-2 bg-white/5 border border-fuchsia-400/20 rounded-xl p-3">
+                <div className="text-[10px] tracking-widest text-fuchsia-300/70 mb-1">PRECISION</div>
+                <div className="text-xs text-gray-300">Second finger acts as a fine-tune joystick for surgical turns</div>
               </div>
             </div>
-            <div className="text-[10px] tracking-widest text-gray-500 mt-6">BEST · {best}</div>
+
+            {leaderboard.length > 0 && (
+              <div className="mt-6 bg-black/40 border border-cyan-400/20 rounded-2xl p-4 text-left" style={{ boxShadow: "0 0 24px rgba(0,249,255,0.15)" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] tracking-[0.3em] text-cyan-300/80">SCORE LOG · TOP 10</div>
+                  <button
+                    onClick={() => { setLeaderboard([]); localStorage.removeItem("neonSlither4DLeaderboard"); }}
+                    className="text-[10px] tracking-widest text-gray-500 hover:text-red-400"
+                  >
+                    CLEAR
+                  </button>
+                </div>
+                <ol className="space-y-1 max-h-44 overflow-y-auto">
+                  {leaderboard.map((row, i) => (
+                    <li key={row.date + "-" + i} className="flex items-center justify-between text-xs font-mono tabular-nums">
+                      <span className={`w-6 ${i === 0 ? "text-yellow-300" : i < 3 ? "text-cyan-300" : "text-gray-500"}`}>#{i + 1}</span>
+                      <span className="flex-1 truncate text-gray-200 px-2">{row.name}</span>
+                      <span className="text-fuchsia-300 font-bold">{row.score}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            <div className="text-[10px] tracking-widest text-gray-500 mt-4">BEST · {best}</div>
           </div>
         </div>
       )}
@@ -734,8 +864,25 @@ function NeonSlither() {
               <div className="text-7xl font-black tabular-nums" style={{ color: "#00f9ff", textShadow: "0 0 20px #00f9ff" }}>{score}</div>
             </div>
             {newBest && (
-              <div className="mb-6 py-3 bg-gradient-to-r from-yellow-400/20 to-fuchsia-500/20 border border-yellow-400/50 rounded-xl">
+              <div className="mb-4 py-3 bg-gradient-to-r from-yellow-400/20 to-fuchsia-500/20 border border-yellow-400/50 rounded-xl">
                 <div className="text-yellow-300 font-bold tracking-wider">★ NEW HIGH SCORE ★</div>
+              </div>
+            )}
+            {leaderboard.length > 0 && (
+              <div className="mb-4 bg-black/40 border border-cyan-400/20 rounded-2xl p-4 text-left">
+                <div className="text-[10px] tracking-[0.3em] text-cyan-300/80 mb-2">SCORE LOG</div>
+                <ol className="space-y-1 max-h-40 overflow-y-auto">
+                  {leaderboard.slice(0, 5).map((row, i) => {
+                    const mine = row.score === score && Math.abs(Date.now() - row.date) < 5000;
+                    return (
+                      <li key={row.date + "-" + i} className={`flex items-center justify-between text-xs font-mono tabular-nums ${mine ? "text-yellow-300" : ""}`}>
+                        <span className="w-6 text-gray-500">#{i + 1}</span>
+                        <span className="flex-1 truncate px-2">{row.name}</span>
+                        <span className="font-bold">{row.score}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
               </div>
             )}
             <div className="flex gap-3">
