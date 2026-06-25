@@ -783,9 +783,19 @@ function NeonSlither() {
             <h1 className="text-5xl sm:text-7xl font-black tracking-tighter leading-none mb-6" style={{ color: "#ff00cc", textShadow: "0 0 20px #ff00cc, 0 0 40px #ff00cc, 0 0 60px rgba(255,0,200,0.5)" }}>
               SLITHER 4D
             </h1>
-            <p className="text-base sm:text-lg text-gray-300 mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-300 mb-6 leading-relaxed">
               Devour glowing energy. Out-slither 14 rivals.<br/>Become the apex serpent.
             </p>
+            <input
+              value={playerName}
+              onChange={(e) => {
+                const v = e.target.value.toUpperCase().slice(0, 12);
+                setPlayerName(v);
+                localStorage.setItem("neonSlither4DName", v);
+              }}
+              placeholder="YOUR HANDLE"
+              className="w-full mb-4 px-4 py-3 bg-black/40 border border-cyan-400/30 rounded-xl text-center font-bold tracking-widest text-cyan-200 placeholder-cyan-500/40 focus:outline-none focus:border-cyan-300"
+            />
             <button
               onClick={startGame}
               className="w-full px-8 py-5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-black font-black text-lg sm:text-xl rounded-2xl tracking-wider hover:scale-105 active:scale-95 transition-transform"
@@ -793,17 +803,44 @@ function NeonSlither() {
             >
               ENTER THE NEON REALM
             </button>
-            <div className="mt-8 grid grid-cols-2 gap-3 text-left">
+            <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-cyan-300/70 mb-1">STEER</div>
-                <div className="text-xs text-gray-300">Move mouse / drag finger</div>
+                <div className="text-xs text-gray-300">Drag finger / move mouse</div>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-fuchsia-300/70 mb-1">BOOST</div>
-                <div className="text-xs text-gray-300">Hold click / hold touch</div>
+                <div className="text-xs text-gray-300">First tap = instant burst</div>
+              </div>
+              <div className="col-span-2 bg-white/5 border border-fuchsia-400/20 rounded-xl p-3">
+                <div className="text-[10px] tracking-widest text-fuchsia-300/70 mb-1">PRECISION</div>
+                <div className="text-xs text-gray-300">Second finger acts as a fine-tune joystick for surgical turns</div>
               </div>
             </div>
-            <div className="text-[10px] tracking-widest text-gray-500 mt-6">BEST · {best}</div>
+
+            {leaderboard.length > 0 && (
+              <div className="mt-6 bg-black/40 border border-cyan-400/20 rounded-2xl p-4 text-left" style={{ boxShadow: "0 0 24px rgba(0,249,255,0.15)" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] tracking-[0.3em] text-cyan-300/80">SCORE LOG · TOP 10</div>
+                  <button
+                    onClick={() => { setLeaderboard([]); localStorage.removeItem("neonSlither4DLeaderboard"); }}
+                    className="text-[10px] tracking-widest text-gray-500 hover:text-red-400"
+                  >
+                    CLEAR
+                  </button>
+                </div>
+                <ol className="space-y-1 max-h-44 overflow-y-auto">
+                  {leaderboard.map((row, i) => (
+                    <li key={row.date + "-" + i} className="flex items-center justify-between text-xs font-mono tabular-nums">
+                      <span className={`w-6 ${i === 0 ? "text-yellow-300" : i < 3 ? "text-cyan-300" : "text-gray-500"}`}>#{i + 1}</span>
+                      <span className="flex-1 truncate text-gray-200 px-2">{row.name}</span>
+                      <span className="text-fuchsia-300 font-bold">{row.score}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            <div className="text-[10px] tracking-widest text-gray-500 mt-4">BEST · {best}</div>
           </div>
         </div>
       )}
