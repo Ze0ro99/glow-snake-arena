@@ -769,6 +769,12 @@ function NeonSlither() {
               </div>
             </div>
           )}
+
+          {precisionMode && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none bg-black/50 border border-fuchsia-400/50 rounded-full px-4 py-1.5 text-[10px] tracking-[0.3em] font-bold text-fuchsia-200" style={{ boxShadow: "0 0 20px rgba(255,0,200,0.4)" }}>
+              ◎ PRECISION LOCK
+            </div>
+          )}
         </>
       )}
 
