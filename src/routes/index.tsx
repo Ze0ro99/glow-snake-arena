@@ -786,9 +786,21 @@ function NeonSlither() {
 
       {/* Start Screen */}
       {screen === "start" && (
-        <div className="absolute inset-0 flex items-center justify-center p-4 z-20" style={{ background: "radial-gradient(ellipse at center, rgba(10,4,32,0.7) 0%, rgba(0,0,0,0.95) 100%)" }}>
-          <div className="text-center max-w-md">
-            <div className="text-xs tracking-[0.4em] text-cyan-300/70 mb-3">CYBERPUNK ARENA</div>
+        <div className="absolute inset-0 overflow-y-auto z-20" style={{ background: "radial-gradient(ellipse at center, rgba(10,4,32,0.85) 0%, rgba(0,0,0,0.97) 100%)" }}>
+          <div className="min-h-full flex items-center justify-center p-4">
+          <div className="text-center max-w-md w-full">
+            {/* Hero banner with icon overlay */}
+            <div className="relative mb-6 rounded-3xl overflow-hidden border border-cyan-400/30" style={{ boxShadow: "0 0 40px rgba(0,249,255,0.35), inset 0 0 40px rgba(0,0,0,0.6)" }}>
+              <img src={cyberBanner.url} alt="Cyber grid arena" className="w-full h-40 sm:h-48 object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-3">
+                <img src={snakeIcon.url} alt="" className="w-12 h-12 rounded-full border-2 border-cyan-300" style={{ boxShadow: "0 0 24px rgba(0,249,255,0.8)" }} />
+                <div className="text-left">
+                  <div className="text-[9px] tracking-[0.4em] text-cyan-300/90">CYBERPUNK ARENA</div>
+                  <div className="text-[10px] tracking-widest text-fuchsia-300/80">SEASON · 4D</div>
+                </div>
+              </div>
+            </div>
             <h1 className="text-5xl sm:text-7xl font-black tracking-tighter leading-none mb-2" style={{ color: "#00f9ff", textShadow: "0 0 20px #00f9ff, 0 0 40px #00f9ff, 0 0 60px rgba(0,249,255,0.5)" }}>
               NEON
             </h1>
