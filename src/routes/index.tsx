@@ -864,7 +864,17 @@ function NeonSlither() {
                 </ol>
               </div>
             )}
+            {/* Gameplay preview strip */}
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[gameplay1, gameplay2, gameplay3].map((g, i) => (
+                <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-fuchsia-400/20" style={{ boxShadow: "0 0 16px rgba(255,0,200,0.2)" }}>
+                  <img src={g.url} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                </div>
+              ))}
+            </div>
             <div className="text-[10px] tracking-widest text-gray-500 mt-4">BEST · {best}</div>
+          </div>
           </div>
         </div>
       )}
