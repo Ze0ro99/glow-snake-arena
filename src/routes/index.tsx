@@ -881,9 +881,14 @@ function NeonSlither() {
 
       {/* Game Over Screen */}
       {screen === "over" && (
-        <div className="absolute inset-0 flex items-center justify-center p-4 z-20 bg-black/80 backdrop-blur-sm">
-          <div className="text-center max-w-md">
-            <div className="text-xs tracking-[0.4em] text-red-400/80 mb-2">SYSTEM TERMINATED</div>
+        <div className="absolute inset-0 overflow-y-auto z-20 bg-black/80 backdrop-blur-sm">
+          <div className="min-h-full flex items-center justify-center p-4">
+          <div className="text-center max-w-md w-full">
+            <div className="relative mb-5 rounded-2xl overflow-hidden border border-red-500/40" style={{ boxShadow: "0 0 30px rgba(255,0,68,0.4)" }}>
+              <img src={tournamentBanner.url} alt="Tournament" className="w-full h-32 object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+              <div className="absolute bottom-2 left-0 right-0 text-[10px] tracking-[0.4em] text-red-300">SYSTEM TERMINATED</div>
+            </div>
             <h2 className="text-5xl sm:text-7xl font-black tracking-tighter mb-6" style={{ color: "#ff0044", textShadow: "0 0 20px #ff0044, 0 0 40px #ff0044" }}>
               GAME OVER
             </h2>
