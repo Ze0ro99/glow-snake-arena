@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import cyberBanner from "@/assets/images/cyber_grid_banner.jpg.asset.json";
+import snakeIcon from "@/assets/images/neon_snake_icon.jpg.asset.json";
+import gameplay1 from "@/assets/images/snake_gameplay.jpg.asset.json";
+import gameplay2 from "@/assets/images/snake_gameplay_2.jpg.asset.json";
+import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
+import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
