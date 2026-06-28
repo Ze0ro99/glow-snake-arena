@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import snakeIcon from "../assets/images/neon_snake_icon.jpg.asset.json";
 
 function NotFoundComponent() {
   return (
@@ -95,6 +96,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", type: "image/jpeg", href: snakeIcon.url },
+      { rel: "apple-touch-icon", href: snakeIcon.url },
     ],
   }),
   shellComponent: RootShell,
