@@ -982,6 +982,127 @@ function NeonSlither() {
         </div>
       )}
 
+      {/* Loadout Panel Modal */}
+      {panel !== "none" && screen === "start" && (
+        <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md overflow-y-auto" onClick={() => setPanel("none")}>
+          <div className="min-h-full flex items-start sm:items-center justify-center p-4 pt-10">
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-gradient-to-b from-[#0a0a1f] to-[#06010f] border border-cyan-400/30 rounded-3xl p-5 sm:p-6" style={{ boxShadow: "0 0 60px rgba(0,249,255,0.3)" }}>
+              <div className="flex items-center justify-between mb-5">
+                <div className="text-xs tracking-[0.3em] text-cyan-300">
+                  {panel === "skins" ? "SKIN STORE" : panel === "maps" ? "ARENA SELECT" : "MOVEMENT TUNING"}
+                </div>
+                <button onClick={() => setPanel("none")} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+              </div>
+
+              {panel === "skins" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                    <span>Earn ◎ credits by playing. Reach length to unlock rewards.</span>
+                    <span className="text-yellow-300 font-bold">◎ {coins}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {SKINS.map(sk => {
+                      const owned = ownedSkins.includes(sk.id);
+                      const active = selectedSkin === sk.id;
+                      const canBuy = !owned && coins >= sk.cost;
+                      return (
+                        <div key={sk.id} className={`relative rounded-2xl p-3 border transition ${active ? "border-cyan-300 bg-cyan-400/10" : "border-white/10 bg-white/5"}`}>
+                          <div className="h-14 rounded-xl mb-2 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${sk.palette[0]}, ${sk.palette[1]})`, boxShadow: `0 0 18px ${sk.palette[0]}` }}>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                          </div>
+                          <div className="text-xs font-bold text-white truncate">{sk.name}</div>
+                          <div className={`text-[9px] tracking-widest uppercase ${sk.tier === "legendary" ? "text-yellow-300" : sk.tier === "rare" ? "text-fuchsia-300" : "text-gray-400"}`}>{sk.tier}</div>
+                          {owned ? (
+                            <button
+                              onClick={() => setSelectedSkin(sk.id)}
+                              className={`mt-2 w-full py-1.5 rounded-lg text-[10px] font-black tracking-widest ${active ? "bg-cyan-300 text-black" : "bg-white/10 text-cyan-200 hover:bg-white/20"}`}
+                            >
+                              {active ? "EQUIPPED" : "EQUIP"}
+                            </button>
+                          ) : (
+                            <button
+                              disabled={!canBuy}
+                              onClick={() => {
+                                if (!canBuy) return;
+                                setCoins(c => c - sk.cost);
+                                setOwnedSkins(o => [...o, sk.id]);
+                                setSelectedSkin(sk.id);
+                              }}
+                              className={`mt-2 w-full py-1.5 rounded-lg text-[10px] font-black tracking-widest ${canBuy ? "bg-gradient-to-r from-yellow-400 to-fuchsia-400 text-black" : "bg-white/5 text-gray-500 cursor-not-allowed"}`}
+                            >
+                              ◎ {sk.cost}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {panel === "maps" && (
+                <div className="space-y-3">
+                  {MAPS.map(m => {
+                    const active = selectedMap === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => setSelectedMap(m.id)}
+                        className={`w-full text-left p-4 rounded-2xl border transition ${active ? "border-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 bg-white/5 hover:border-fuchsia-400/40"}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-black text-base" style={{ color: m.accent, textShadow: `0 0 10px ${m.accent}` }}>{m.name}</div>
+                          {active && <span className="text-[10px] tracking-widest text-cyan-300">SELECTED</span>}
+                        </div>
+                        <div className="mt-1 text-[10px] tracking-widest text-gray-400 grid grid-cols-3 gap-2">
+                          <span>WORLD · {m.world}</span>
+                          <span>AI · {m.aiCount}</span>
+                          <span>FOOD · {m.foodCount}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {panel === "settings" && (
+                <div className="space-y-5">
+                  {[
+                    { key: "baseSpeed" as const,       label: "Base Speed",       min: 1.5, max: 4.5, step: 0.1 },
+                    { key: "boostMultiplier" as const, label: "Boost Multiplier", min: 1.2, max: 3.0, step: 0.1 },
+                    { key: "turnRate" as const,        label: "Turn Rate",        min: 0.05, max: 0.25, step: 0.01 },
+                  ].map(cfg => (
+                    <div key={cfg.key}>
+                      <div className="flex items-center justify-between text-xs tracking-widest mb-2">
+                        <span className="text-cyan-200">{cfg.label.toUpperCase()}</span>
+                        <span className="text-yellow-300 font-mono">{settings[cfg.key].toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={cfg.min}
+                        max={cfg.max}
+                        step={cfg.step}
+                        value={settings[cfg.key]}
+                        onChange={(e) => setSettings(s => ({ ...s, [cfg.key]: parseFloat(e.target.value) }))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setSettings(DEFAULT_SETTINGS)}
+                    className="w-full py-2.5 border border-white/20 rounded-xl text-xs tracking-widest font-bold text-gray-300 hover:bg-white/5"
+                  >
+                    RESET TO DEFAULT
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Game Over Screen */}
       {screen === "over" && (
         <div className="absolute inset-0 overflow-y-auto z-20 bg-black/80 backdrop-blur-sm">
