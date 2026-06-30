@@ -25,7 +25,7 @@ type Vec = { x: number; y: number };
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number };
 type Food = { x: number; y: number; size: number; color: string; phase: number; value: number };
 
-const WORLD = 4000;
+let WORLD = 4000;
 const NEON_PALETTES = [
   ["#00f9ff", "#0066ff"],
   ["#ff00aa", "#ff0066"],
@@ -43,6 +43,31 @@ const NEON_PALETTES = [
   ["#9900ff", "#6600cc"],
   ["#00ffcc", "#00ccaa"],
 ];
+
+// Player skins (cosmetic). Free + unlockable.
+type Skin = { id: string; name: string; palette: [string, string]; cost: number; tier: "common" | "rare" | "legendary" };
+const SKINS: Skin[] = [
+  { id: "cyan",      name: "Neon Cyan",     palette: ["#00f9ff", "#0066ff"], cost: 0,   tier: "common" },
+  { id: "magenta",   name: "Magenta Pulse", palette: ["#ff00cc", "#ff0066"], cost: 0,   tier: "common" },
+  { id: "lime",      name: "Acid Lime",     palette: ["#a3ff00", "#33aa00"], cost: 50,  tier: "rare" },
+  { id: "sunset",    name: "Sunset Coral",  palette: ["#ff8a3d", "#ff2d55"], cost: 75,  tier: "rare" },
+  { id: "violet",    name: "Void Violet",   palette: ["#b388ff", "#6200ea"], cost: 100, tier: "rare" },
+  { id: "gold",      name: "Aurum Gold",    palette: ["#ffd700", "#ff8c00"], cost: 250, tier: "legendary" },
+  { id: "ice",       name: "Glacier Ice",   palette: ["#a0f0ff", "#0099ff"], cost: 250, tier: "legendary" },
+  { id: "rainbow",   name: "Prism Apex",    palette: ["#ff00ff", "#00ffff"], cost: 500, tier: "legendary" },
+];
+
+// Selectable maps. Each map tweaks world size, AI count and food density.
+type MapDef = { id: string; name: string; world: number; aiCount: number; foodCount: number; bg: string; accent: string };
+const MAPS: MapDef[] = [
+  { id: "grid",   name: "Cyber Grid",      world: 4000, aiCount: 14, foodCount: 400, bg: "#06021a", accent: "#00f9ff" },
+  { id: "arena",  name: "Tournament Arena", world: 3000, aiCount: 18, foodCount: 350, bg: "#1a0410", accent: "#ff00aa" },
+  { id: "void",   name: "Endless Void",    world: 6000, aiCount: 22, foodCount: 600, bg: "#000010", accent: "#aa00ff" },
+];
+
+// Movement settings (tunable by player).
+type MoveSettings = { baseSpeed: number; boostMultiplier: number; turnRate: number };
+const DEFAULT_SETTINGS: MoveSettings = { baseSpeed: 2.6, boostMultiplier: 1.9, turnRate: 0.12 };
 
 class Snake {
   segments: Vec[] = [];
