@@ -294,15 +294,20 @@ function NeonSlither() {
 
   const startGame = () => {
     const s = stateRef.current;
-    s.player = new Snake(WORLD/2, WORLD/2, NEON_PALETTES[0], true, 20);
-    s.player.baseSpeed = 2.6;
+    const map = MAPS.find(m => m.id === selectedMap) || MAPS[0];
+    WORLD = map.world;
+    const skin = SKINS.find(sk => sk.id === selectedSkin) || SKINS[0];
+    s.player = new Snake(WORLD/2, WORLD/2, skin.palette, true, 20);
+    s.player.baseSpeed = settings.baseSpeed;
+    s.player.boostMult = settings.boostMultiplier;
+    s.player.turnRate = settings.turnRate;
     s.ais = [];
-    for (let i = 0; i < 14; i++) spawnAI();
+    for (let i = 0; i < map.aiCount; i++) spawnAI();
     s.foods = [];
-    for (let i = 0; i < 400; i++) spawnFood();
+    for (let i = 0; i < map.foodCount; i++) spawnFood();
     s.particles = [];
     s.stars = [];
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 240; i++) {
       s.stars.push({
         x: Math.random() * WORLD, y: Math.random() * WORLD,
         z: 0.2 + Math.random() * 0.8,
