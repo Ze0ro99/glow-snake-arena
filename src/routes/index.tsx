@@ -912,6 +912,24 @@ function NeonSlither() {
             >
               ENTER THE NEON REALM
             </button>
+
+            {/* Loadout toolbar: Skins / Maps / Settings */}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <button onClick={() => setPanel("skins")} className="px-3 py-3 bg-black/40 border border-cyan-400/30 rounded-xl text-xs font-bold tracking-widest text-cyan-200 hover:border-cyan-300 transition">
+                <div className="text-base mb-0.5">◈</div>SKINS
+              </button>
+              <button onClick={() => setPanel("maps")} className="px-3 py-3 bg-black/40 border border-fuchsia-400/30 rounded-xl text-xs font-bold tracking-widest text-fuchsia-200 hover:border-fuchsia-300 transition">
+                <div className="text-base mb-0.5">⬢</div>MAPS
+              </button>
+              <button onClick={() => setPanel("settings")} className="px-3 py-3 bg-black/40 border border-yellow-400/30 rounded-xl text-xs font-bold tracking-widest text-yellow-200 hover:border-yellow-300 transition">
+                <div className="text-base mb-0.5">⚙</div>TUNE
+              </button>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[10px] tracking-widest text-gray-400">
+              <span>SKIN · <span className="text-cyan-300">{(SKINS.find(s=>s.id===selectedSkin)?.name||"").toUpperCase()}</span></span>
+              <span>MAP · <span className="text-fuchsia-300">{(MAPS.find(m=>m.id===selectedMap)?.name||"").toUpperCase()}</span></span>
+              <span>◎ {coins}</span>
+            </div>
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-cyan-300/70 mb-1">STEER</div>
