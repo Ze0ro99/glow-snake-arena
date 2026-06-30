@@ -67,7 +67,7 @@ export function PiAuth() {
         const s = await fetchSession();
         if (cancelled) return;
         if (s.authenticated) {
-          setUsername(s.username);
+          setUsername(s.username ?? null);
           setStatus("ready");
           return;
         }
