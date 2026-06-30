@@ -191,7 +191,28 @@ function NeonSlither() {
     } catch {}
     const n = localStorage.getItem("neonSlither4DName");
     if (n) setPlayerName(n);
+    try {
+      const st = JSON.parse(localStorage.getItem("neonSlither4DSettings") || "null");
+      if (st && typeof st === "object") setSettings({ ...DEFAULT_SETTINGS, ...st });
+    } catch {}
+    const sk = localStorage.getItem("neonSlither4DSkin");
+    if (sk) setSelectedSkin(sk);
+    try {
+      const ow = JSON.parse(localStorage.getItem("neonSlither4DOwned") || "null");
+      if (Array.isArray(ow)) setOwnedSkins(Array.from(new Set([...ow, "cyan", "magenta"])));
+    } catch {}
+    const c = parseInt(localStorage.getItem("neonSlither4DCoins") || "0");
+    if (!isNaN(c)) setCoins(c);
+    const mp = localStorage.getItem("neonSlither4DMap");
+    if (mp) setSelectedMap(mp);
   }, []);
+
+  // Persist settings/skin/map
+  useEffect(() => { localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { localStorage.setItem("neonSlither4DSkin", selectedSkin); }, [selectedSkin]);
+  useEffect(() => { localStorage.setItem("neonSlither4DOwned", JSON.stringify(ownedSkins)); }, [ownedSkins]);
+  useEffect(() => { localStorage.setItem("neonSlither4DCoins", String(coins)); }, [coins]);
+  useEffect(() => { localStorage.setItem("neonSlither4DMap", selectedMap); }, [selectedMap]);
 
   // Resize
   useEffect(() => {
