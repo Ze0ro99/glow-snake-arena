@@ -25,7 +25,7 @@ type Vec = { x: number; y: number };
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number };
 type Food = { x: number; y: number; size: number; color: string; phase: number; value: number };
 
-const WORLD = 4000;
+let WORLD = 4000;
 const NEON_PALETTES = [
   ["#00f9ff", "#0066ff"],
   ["#ff00aa", "#ff0066"],
@@ -44,6 +44,31 @@ const NEON_PALETTES = [
   ["#00ffcc", "#00ccaa"],
 ];
 
+// Player skins (cosmetic). Free + unlockable.
+type Skin = { id: string; name: string; palette: [string, string]; cost: number; tier: "common" | "rare" | "legendary" };
+const SKINS: Skin[] = [
+  { id: "cyan",      name: "Neon Cyan",     palette: ["#00f9ff", "#0066ff"], cost: 0,   tier: "common" },
+  { id: "magenta",   name: "Magenta Pulse", palette: ["#ff00cc", "#ff0066"], cost: 0,   tier: "common" },
+  { id: "lime",      name: "Acid Lime",     palette: ["#a3ff00", "#33aa00"], cost: 50,  tier: "rare" },
+  { id: "sunset",    name: "Sunset Coral",  palette: ["#ff8a3d", "#ff2d55"], cost: 75,  tier: "rare" },
+  { id: "violet",    name: "Void Violet",   palette: ["#b388ff", "#6200ea"], cost: 100, tier: "rare" },
+  { id: "gold",      name: "Aurum Gold",    palette: ["#ffd700", "#ff8c00"], cost: 250, tier: "legendary" },
+  { id: "ice",       name: "Glacier Ice",   palette: ["#a0f0ff", "#0099ff"], cost: 250, tier: "legendary" },
+  { id: "rainbow",   name: "Prism Apex",    palette: ["#ff00ff", "#00ffff"], cost: 500, tier: "legendary" },
+];
+
+// Selectable maps. Each map tweaks world size, AI count and food density.
+type MapDef = { id: string; name: string; world: number; aiCount: number; foodCount: number; bg: string; accent: string };
+const MAPS: MapDef[] = [
+  { id: "grid",   name: "Cyber Grid",      world: 4000, aiCount: 14, foodCount: 400, bg: "#06021a", accent: "#00f9ff" },
+  { id: "arena",  name: "Tournament Arena", world: 3000, aiCount: 18, foodCount: 350, bg: "#1a0410", accent: "#ff00aa" },
+  { id: "void",   name: "Endless Void",    world: 6000, aiCount: 22, foodCount: 600, bg: "#000010", accent: "#aa00ff" },
+];
+
+// Movement settings (tunable by player).
+type MoveSettings = { baseSpeed: number; boostMultiplier: number; turnRate: number };
+const DEFAULT_SETTINGS: MoveSettings = { baseSpeed: 2.6, boostMultiplier: 1.9, turnRate: 0.12 };
+
 class Snake {
   segments: Vec[] = [];
   targetAngle = 0;
@@ -57,6 +82,8 @@ class Snake {
   isPlayer: boolean;
   alive = true;
   boost = false;
+  boostMult = 1.9;
+  turnRate = 0.12;
   aiTimer = 0;
   aiTarget: Vec | null = null;
   aggression: number;
@@ -92,10 +119,10 @@ class Snake {
     let diff = this.targetAngle - this.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    const turn = Math.min(Math.abs(diff), 0.12) * Math.sign(diff);
+    const turn = Math.min(Math.abs(diff), this.turnRate) * Math.sign(diff);
     this.angle += turn;
 
-    const sp = (this.boost ? this.baseSpeed * 1.9 : this.baseSpeed) * dt * 60;
+    const sp = (this.boost ? this.baseSpeed * this.boostMult : this.baseSpeed) * dt * 60;
     const h = this.head();
     const nx = h.x + Math.cos(this.angle) * sp;
     const ny = h.y + Math.sin(this.angle) * sp;
@@ -148,6 +175,12 @@ function NeonSlither() {
   const [leaderboard, setLeaderboard] = useState<{ score: number; date: number; name: string }[]>([]);
   const [playerName, setPlayerName] = useState<string>("PLAYER");
   const [precisionMode, setPrecisionMode] = useState(false);
+  const [settings, setSettings] = useState<MoveSettings>(DEFAULT_SETTINGS);
+  const [selectedSkin, setSelectedSkin] = useState<string>("cyan");
+  const [ownedSkins, setOwnedSkins] = useState<string[]>(["cyan", "magenta"]);
+  const [coins, setCoins] = useState<number>(0);
+  const [selectedMap, setSelectedMap] = useState<string>("grid");
+  const [panel, setPanel] = useState<"none" | "settings" | "skins" | "maps">("none");
 
   useEffect(() => {
     const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
@@ -158,7 +191,28 @@ function NeonSlither() {
     } catch {}
     const n = localStorage.getItem("neonSlither4DName");
     if (n) setPlayerName(n);
+    try {
+      const st = JSON.parse(localStorage.getItem("neonSlither4DSettings") || "null");
+      if (st && typeof st === "object") setSettings({ ...DEFAULT_SETTINGS, ...st });
+    } catch {}
+    const sk = localStorage.getItem("neonSlither4DSkin");
+    if (sk) setSelectedSkin(sk);
+    try {
+      const ow = JSON.parse(localStorage.getItem("neonSlither4DOwned") || "null");
+      if (Array.isArray(ow)) setOwnedSkins(Array.from(new Set([...ow, "cyan", "magenta"])));
+    } catch {}
+    const c = parseInt(localStorage.getItem("neonSlither4DCoins") || "0");
+    if (!isNaN(c)) setCoins(c);
+    const mp = localStorage.getItem("neonSlither4DMap");
+    if (mp) setSelectedMap(mp);
   }, []);
+
+  // Persist settings/skin/map
+  useEffect(() => { localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { localStorage.setItem("neonSlither4DSkin", selectedSkin); }, [selectedSkin]);
+  useEffect(() => { localStorage.setItem("neonSlither4DOwned", JSON.stringify(ownedSkins)); }, [ownedSkins]);
+  useEffect(() => { localStorage.setItem("neonSlither4DCoins", String(coins)); }, [coins]);
+  useEffect(() => { localStorage.setItem("neonSlither4DMap", selectedMap); }, [selectedMap]);
 
   // Resize
   useEffect(() => {
@@ -240,15 +294,20 @@ function NeonSlither() {
 
   const startGame = () => {
     const s = stateRef.current;
-    s.player = new Snake(WORLD/2, WORLD/2, NEON_PALETTES[0], true, 20);
-    s.player.baseSpeed = 2.6;
+    const map = MAPS.find(m => m.id === selectedMap) || MAPS[0];
+    WORLD = map.world;
+    const skin = SKINS.find(sk => sk.id === selectedSkin) || SKINS[0];
+    s.player = new Snake(WORLD/2, WORLD/2, skin.palette, true, 20);
+    s.player.baseSpeed = settings.baseSpeed;
+    s.player.boostMult = settings.boostMultiplier;
+    s.player.turnRate = settings.turnRate;
     s.ais = [];
-    for (let i = 0; i < 14; i++) spawnAI();
+    for (let i = 0; i < map.aiCount; i++) spawnAI();
     s.foods = [];
-    for (let i = 0; i < 400; i++) spawnFood();
+    for (let i = 0; i < map.foodCount; i++) spawnFood();
     s.particles = [];
     s.stars = [];
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 240; i++) {
       s.stars.push({
         x: Math.random() * WORLD, y: Math.random() * WORLD,
         z: 0.2 + Math.random() * 0.8,
@@ -275,6 +334,9 @@ function NeonSlither() {
     s.shake = 30;
     const finalLen = Math.floor(s.player.length);
     setScore(finalLen);
+    // Reward credits: 1 credit per 4 length earned
+    const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
+    if (earned > 0) setCoins(c => c + earned);
     if (finalLen > best) {
       setBest(finalLen);
       localStorage.setItem("neonSlither4DBest", String(finalLen));
@@ -782,6 +844,27 @@ function NeonSlither() {
               ◎ PRECISION LOCK
             </div>
           )}
+
+          {/* On-screen BOOST button (hold to dash) */}
+          <button
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              stateRef.current.boost = true;
+              if (stateRef.current.running) playSound("boost");
+            }}
+            onPointerUp={() => { stateRef.current.boost = false; }}
+            onPointerCancel={() => { stateRef.current.boost = false; }}
+            onPointerLeave={() => { stateRef.current.boost = false; }}
+            onContextMenu={(e) => e.preventDefault()}
+            className="absolute bottom-6 right-6 z-10 select-none w-20 h-20 sm:w-24 sm:h-24 rounded-full font-black text-xs tracking-[0.2em] text-black active:scale-90 transition-transform"
+            style={{
+              background: "radial-gradient(circle at 30% 30%, #fff, #00f9ff 40%, #ff00cc 100%)",
+              boxShadow: "0 0 30px rgba(0,249,255,0.7), 0 0 60px rgba(255,0,200,0.4), inset 0 0 20px rgba(255,255,255,0.4)",
+              touchAction: "none",
+            }}
+          >
+            BOOST
+          </button>
         </>
       )}
 
@@ -829,6 +912,24 @@ function NeonSlither() {
             >
               ENTER THE NEON REALM
             </button>
+
+            {/* Loadout toolbar: Skins / Maps / Settings */}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <button onClick={() => setPanel("skins")} className="px-3 py-3 bg-black/40 border border-cyan-400/30 rounded-xl text-xs font-bold tracking-widest text-cyan-200 hover:border-cyan-300 transition">
+                <div className="text-base mb-0.5">◈</div>SKINS
+              </button>
+              <button onClick={() => setPanel("maps")} className="px-3 py-3 bg-black/40 border border-fuchsia-400/30 rounded-xl text-xs font-bold tracking-widest text-fuchsia-200 hover:border-fuchsia-300 transition">
+                <div className="text-base mb-0.5">⬢</div>MAPS
+              </button>
+              <button onClick={() => setPanel("settings")} className="px-3 py-3 bg-black/40 border border-yellow-400/30 rounded-xl text-xs font-bold tracking-widest text-yellow-200 hover:border-yellow-300 transition">
+                <div className="text-base mb-0.5">⚙</div>TUNE
+              </button>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[10px] tracking-widest text-gray-400">
+              <span>SKIN · <span className="text-cyan-300">{(SKINS.find(s=>s.id===selectedSkin)?.name||"").toUpperCase()}</span></span>
+              <span>MAP · <span className="text-fuchsia-300">{(MAPS.find(m=>m.id===selectedMap)?.name||"").toUpperCase()}</span></span>
+              <span>◎ {coins}</span>
+            </div>
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-cyan-300/70 mb-1">STEER</div>
@@ -880,6 +981,127 @@ function NeonSlither() {
           </div>
         </div>
       )}
+
+      {/* Loadout Panel Modal */}
+      {panel !== "none" && screen === "start" && (
+        <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md overflow-y-auto" onClick={() => setPanel("none")}>
+          <div className="min-h-full flex items-start sm:items-center justify-center p-4 pt-10">
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-gradient-to-b from-[#0a0a1f] to-[#06010f] border border-cyan-400/30 rounded-3xl p-5 sm:p-6" style={{ boxShadow: "0 0 60px rgba(0,249,255,0.3)" }}>
+              <div className="flex items-center justify-between mb-5">
+                <div className="text-xs tracking-[0.3em] text-cyan-300">
+                  {panel === "skins" ? "SKIN STORE" : panel === "maps" ? "ARENA SELECT" : "MOVEMENT TUNING"}
+                </div>
+                <button onClick={() => setPanel("none")} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+              </div>
+
+              {panel === "skins" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                    <span>Earn ◎ credits by playing. Reach length to unlock rewards.</span>
+                    <span className="text-yellow-300 font-bold">◎ {coins}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {SKINS.map(sk => {
+                      const owned = ownedSkins.includes(sk.id);
+                      const active = selectedSkin === sk.id;
+                      const canBuy = !owned && coins >= sk.cost;
+                      return (
+                        <div key={sk.id} className={`relative rounded-2xl p-3 border transition ${active ? "border-cyan-300 bg-cyan-400/10" : "border-white/10 bg-white/5"}`}>
+                          <div className="h-14 rounded-xl mb-2 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${sk.palette[0]}, ${sk.palette[1]})`, boxShadow: `0 0 18px ${sk.palette[0]}` }}>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                          </div>
+                          <div className="text-xs font-bold text-white truncate">{sk.name}</div>
+                          <div className={`text-[9px] tracking-widest uppercase ${sk.tier === "legendary" ? "text-yellow-300" : sk.tier === "rare" ? "text-fuchsia-300" : "text-gray-400"}`}>{sk.tier}</div>
+                          {owned ? (
+                            <button
+                              onClick={() => setSelectedSkin(sk.id)}
+                              className={`mt-2 w-full py-1.5 rounded-lg text-[10px] font-black tracking-widest ${active ? "bg-cyan-300 text-black" : "bg-white/10 text-cyan-200 hover:bg-white/20"}`}
+                            >
+                              {active ? "EQUIPPED" : "EQUIP"}
+                            </button>
+                          ) : (
+                            <button
+                              disabled={!canBuy}
+                              onClick={() => {
+                                if (!canBuy) return;
+                                setCoins(c => c - sk.cost);
+                                setOwnedSkins(o => [...o, sk.id]);
+                                setSelectedSkin(sk.id);
+                              }}
+                              className={`mt-2 w-full py-1.5 rounded-lg text-[10px] font-black tracking-widest ${canBuy ? "bg-gradient-to-r from-yellow-400 to-fuchsia-400 text-black" : "bg-white/5 text-gray-500 cursor-not-allowed"}`}
+                            >
+                              ◎ {sk.cost}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {panel === "maps" && (
+                <div className="space-y-3">
+                  {MAPS.map(m => {
+                    const active = selectedMap === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => setSelectedMap(m.id)}
+                        className={`w-full text-left p-4 rounded-2xl border transition ${active ? "border-fuchsia-300 bg-fuchsia-400/10" : "border-white/10 bg-white/5 hover:border-fuchsia-400/40"}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-black text-base" style={{ color: m.accent, textShadow: `0 0 10px ${m.accent}` }}>{m.name}</div>
+                          {active && <span className="text-[10px] tracking-widest text-cyan-300">SELECTED</span>}
+                        </div>
+                        <div className="mt-1 text-[10px] tracking-widest text-gray-400 grid grid-cols-3 gap-2">
+                          <span>WORLD · {m.world}</span>
+                          <span>AI · {m.aiCount}</span>
+                          <span>FOOD · {m.foodCount}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {panel === "settings" && (
+                <div className="space-y-5">
+                  {[
+                    { key: "baseSpeed" as const,       label: "Base Speed",       min: 1.5, max: 4.5, step: 0.1 },
+                    { key: "boostMultiplier" as const, label: "Boost Multiplier", min: 1.2, max: 3.0, step: 0.1 },
+                    { key: "turnRate" as const,        label: "Turn Rate",        min: 0.05, max: 0.25, step: 0.01 },
+                  ].map(cfg => (
+                    <div key={cfg.key}>
+                      <div className="flex items-center justify-between text-xs tracking-widest mb-2">
+                        <span className="text-cyan-200">{cfg.label.toUpperCase()}</span>
+                        <span className="text-yellow-300 font-mono">{settings[cfg.key].toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={cfg.min}
+                        max={cfg.max}
+                        step={cfg.step}
+                        value={settings[cfg.key]}
+                        onChange={(e) => setSettings(s => ({ ...s, [cfg.key]: parseFloat(e.target.value) }))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setSettings(DEFAULT_SETTINGS)}
+                    className="w-full py-2.5 border border-white/20 rounded-xl text-xs tracking-widest font-bold text-gray-300 hover:bg-white/5"
+                  >
+                    RESET TO DEFAULT
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Game Over Screen */}
       {screen === "over" && (
