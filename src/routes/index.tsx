@@ -119,10 +119,10 @@ class Snake {
     let diff = this.targetAngle - this.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    const turn = Math.min(Math.abs(diff), 0.12) * Math.sign(diff);
+    const turn = Math.min(Math.abs(diff), this.turnRate) * Math.sign(diff);
     this.angle += turn;
 
-    const sp = (this.boost ? this.baseSpeed * 1.9 : this.baseSpeed) * dt * 60;
+    const sp = (this.boost ? this.baseSpeed * this.boostMult : this.baseSpeed) * dt * 60;
     const h = this.head();
     const nx = h.x + Math.cos(this.angle) * sp;
     const ny = h.y + Math.sin(this.angle) * sp;
