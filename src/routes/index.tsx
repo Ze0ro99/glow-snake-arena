@@ -175,6 +175,12 @@ function NeonSlither() {
   const [leaderboard, setLeaderboard] = useState<{ score: number; date: number; name: string }[]>([]);
   const [playerName, setPlayerName] = useState<string>("PLAYER");
   const [precisionMode, setPrecisionMode] = useState(false);
+  const [settings, setSettings] = useState<MoveSettings>(DEFAULT_SETTINGS);
+  const [selectedSkin, setSelectedSkin] = useState<string>("cyan");
+  const [ownedSkins, setOwnedSkins] = useState<string[]>(["cyan", "magenta"]);
+  const [coins, setCoins] = useState<number>(0);
+  const [selectedMap, setSelectedMap] = useState<string>("grid");
+  const [panel, setPanel] = useState<"none" | "settings" | "skins" | "maps">("none");
 
   useEffect(() => {
     const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
