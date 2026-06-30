@@ -82,6 +82,8 @@ class Snake {
   isPlayer: boolean;
   alive = true;
   boost = false;
+  boostMult = 1.9;
+  turnRate = 0.12;
   aiTimer = 0;
   aiTarget: Vec | null = null;
   aggression: number;
