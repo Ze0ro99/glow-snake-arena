@@ -334,6 +334,9 @@ function NeonSlither() {
     s.shake = 30;
     const finalLen = Math.floor(s.player.length);
     setScore(finalLen);
+    // Reward credits: 1 credit per 4 length earned
+    const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
+    if (earned > 0) setCoins(c => c + earned);
     if (finalLen > best) {
       setBest(finalLen);
       localStorage.setItem("neonSlither4DBest", String(finalLen));
