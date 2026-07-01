@@ -67,7 +67,7 @@ const MAPS: MapDef[] = [
 
 // Movement settings (tunable by player).
 type MoveSettings = { baseSpeed: number; boostMultiplier: number; turnRate: number };
-const DEFAULT_SETTINGS: MoveSettings = { baseSpeed: 2.6, boostMultiplier: 1.9, turnRate: 0.12 };
+const DEFAULT_SETTINGS: MoveSettings = { baseSpeed: 2.8, boostMultiplier: 2.8, turnRate: 0.12 };
 
 class Snake {
   segments: Vec[] = [];
@@ -856,7 +856,7 @@ function NeonSlither() {
             onPointerCancel={() => { stateRef.current.boost = false; }}
             onPointerLeave={() => { stateRef.current.boost = false; }}
             onContextMenu={(e) => e.preventDefault()}
-            className="absolute bottom-6 right-6 z-10 select-none w-20 h-20 sm:w-24 sm:h-24 rounded-full font-black text-xs tracking-[0.2em] text-black active:scale-90 transition-transform"
+            className="absolute bottom-6 left-6 z-10 select-none w-20 h-20 sm:w-24 sm:h-24 rounded-full font-black text-xs tracking-[0.2em] text-black active:scale-90 transition-transform"
             style={{
               background: "radial-gradient(circle at 30% 30%, #fff, #00f9ff 40%, #ff00cc 100%)",
               boxShadow: "0 0 30px rgba(0,249,255,0.7), 0 0 60px rgba(255,0,200,0.4), inset 0 0 20px rgba(255,255,255,0.4)",
