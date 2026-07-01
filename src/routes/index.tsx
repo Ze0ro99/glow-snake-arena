@@ -67,7 +67,7 @@ const MAPS: MapDef[] = [
 
 // Movement settings (tunable by player).
 type MoveSettings = { baseSpeed: number; boostMultiplier: number; turnRate: number };
-const DEFAULT_SETTINGS: MoveSettings = { baseSpeed: 2.8, boostMultiplier: 2.8, turnRate: 0.12 };
+const DEFAULT_SETTINGS: MoveSettings = { baseSpeed: 2.6, boostMultiplier: 2.8, turnRate: 0.12 };
 
 class Snake {
   segments: Vec[] = [];
@@ -1069,7 +1069,7 @@ function NeonSlither() {
                 <div className="space-y-5">
                   {[
                     { key: "baseSpeed" as const,       label: "Base Speed",       min: 1.5, max: 4.5, step: 0.1 },
-                    { key: "boostMultiplier" as const, label: "Boost Multiplier", min: 1.2, max: 3.0, step: 0.1 },
+                    { key: "boostMultiplier" as const, label: "Boost Multiplier", min: 1.2, max: 3.5, step: 0.1 },
                     { key: "turnRate" as const,        label: "Turn Rate",        min: 0.05, max: 0.25, step: 0.01 },
                   ].map(cfg => (
                     <div key={cfg.key}>
