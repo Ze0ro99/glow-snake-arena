@@ -503,76 +503,98 @@ function NeonSlither() {
           ai.update(dt);
         }
 
-        // collisions: player head vs AI bodies
-        // Rule: a boosting snake that rams a non-boosting snake's body kills it.
-        // If both are boosting (or neither), the head-owner dies as usual.
+        // Collisions: devour only happens on head-to-head collisions.
+        // A head touching any body segment kills the attacker (the head's owner).
         const ph = s.player.head();
         for (const ai of s.ais) {
-          let hit = false;
-          for (let i = 2; i < ai.segments.length; i++) {
-            const seg = ai.segments[i];
-            const r = ai.radius + s.player.radius * 0.6;
-            if ((seg.x - ph.x) ** 2 + (seg.y - ph.y) ** 2 < r * r) {
-              hit = true;
-              break;
-            }
-          }
-          if (hit) {
+          if (!ai.alive) continue;
+          const ah = ai.head();
+          const headR = s.player.radius + ai.radius * 0.6;
+          // Player head vs AI head
+          if ((ph.x - ah.x) ** 2 + (ph.y - ah.y) ** 2 < headR * headR) {
             if (s.player.boost && !ai.boost) {
               ai.alive = false;
+            } else if (ai.boost && !s.player.boost) {
+              endGame();
+              break;
             } else {
               endGame();
               break;
             }
           }
           if (!s.running) break;
+          // Player head vs AI body -> player dies
+          let bodyHit = false;
+          for (let i = 2; i < ai.segments.length; i++) {
+            const seg = ai.segments[i];
+            const r = ai.radius + s.player.radius * 0.6;
+            if ((seg.x - ph.x) ** 2 + (seg.y - ph.y) ** 2 < r * r) {
+              bodyHit = true;
+              break;
+            }
+          }
+          if (bodyHit) {
+            endGame();
+            break;
+          }
         }
 
         // AI head vs player body / other AI bodies
         if (s.running) {
-          for (let ai of s.ais) {
+          for (let i = 0; i < s.ais.length; i++) {
+            const ai = s.ais[i];
             if (!ai.alive) continue;
             const ah = ai.head();
-            // AI head vs player body
+            // AI head vs player body -> AI dies
             let hitPlayer = false;
-            for (let i = 2; i < s.player.segments.length; i++) {
-              const seg = s.player.segments[i];
+            for (let j = 2; j < s.player.segments.length; j++) {
+              const seg = s.player.segments[j];
               const r = s.player.radius + ai.radius * 0.6;
               if ((seg.x - ah.x) ** 2 + (seg.y - ah.y) ** 2 < r * r) {
-                hitPlayer = true; break;
+                hitPlayer = true;
+                break;
               }
             }
             if (hitPlayer) {
-              if (ai.boost && !s.player.boost) {
-                endGame();
-                break;
-              } else {
-                ai.alive = false;
-                continue;
-              }
+              ai.alive = false;
+              continue;
             }
             // AI vs AI
-            for (const other of s.ais) {
-              if (other === ai || !other.alive) continue;
-              let hitOther = false;
-              for (let i = 2; i < other.segments.length; i += 2) {
-                const seg = other.segments[i];
-                const r = other.radius + ai.radius * 0.6;
-                if ((seg.x - ah.x) ** 2 + (seg.y - ah.y) ** 2 < r * r) {
-                  hitOther = true; break;
-                }
-              }
-              if (hitOther) {
+            for (let j = 0; j < s.ais.length; j++) {
+              if (i === j) continue;
+              const other = s.ais[j];
+              if (!other.alive) continue;
+              const oh = other.head();
+              const headR = ai.radius + other.radius * 0.6;
+              // AI head vs other AI head
+              if ((ah.x - oh.x) ** 2 + (ah.y - oh.y) ** 2 < headR * headR) {
                 if (ai.boost && !other.boost) {
                   other.alive = false;
+                } else if (other.boost && !ai.boost) {
+                  ai.alive = false;
                 } else {
                   ai.alive = false;
                 }
                 break;
               }
+              // AI head vs other AI body -> AI dies
+              let bodyHit = false;
+              for (let k = 2; k < other.segments.length; k++) {
+                const seg = other.segments[k];
+                const r = other.radius + ai.radius * 0.6;
+                if ((seg.x - ah.x) ** 2 + (seg.y - ah.y) ** 2 < r * r) {
+                  bodyHit = true;
+                  break;
+                }
+              }
+              if (bodyHit) {
+                ai.alive = false;
+                break;
+              }
             }
           }
         }
+
 
         // dead AIs drop food and respawn
         s.ais = s.ais.filter(ai => {
