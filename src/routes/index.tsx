@@ -504,12 +504,23 @@ function NeonSlither() {
         }
 
         // collisions: player head vs AI bodies
+        // Rule: a boosting snake that rams a non-boosting snake's body kills it.
+        // If both are boosting (or neither), the head-owner dies as usual.
         const ph = s.player.head();
         for (const ai of s.ais) {
+          let hit = false;
           for (let i = 2; i < ai.segments.length; i++) {
             const seg = ai.segments[i];
             const r = ai.radius + s.player.radius * 0.6;
             if ((seg.x - ph.x) ** 2 + (seg.y - ph.y) ** 2 < r * r) {
+              hit = true;
+              break;
+            }
+          }
+          if (hit) {
+            if (s.player.boost && !ai.boost) {
+              ai.alive = false;
+            } else {
               endGame();
               break;
             }
@@ -517,30 +528,47 @@ function NeonSlither() {
           if (!s.running) break;
         }
 
-        // AI head vs player body -> AI dies
+        // AI head vs player body / other AI bodies
         if (s.running) {
           for (let ai of s.ais) {
+            if (!ai.alive) continue;
             const ah = ai.head();
+            // AI head vs player body
+            let hitPlayer = false;
             for (let i = 2; i < s.player.segments.length; i++) {
               const seg = s.player.segments[i];
               const r = s.player.radius + ai.radius * 0.6;
               if ((seg.x - ah.x) ** 2 + (seg.y - ah.y) ** 2 < r * r) {
-                ai.alive = false;
+                hitPlayer = true; break;
+              }
+            }
+            if (hitPlayer) {
+              if (ai.boost && !s.player.boost) {
+                endGame();
                 break;
+              } else {
+                ai.alive = false;
+                continue;
               }
             }
             // AI vs AI
-            if (ai.alive) {
-              for (const other of s.ais) {
-                if (other === ai || !other.alive) continue;
-                for (let i = 2; i < other.segments.length; i += 2) {
-                  const seg = other.segments[i];
-                  const r = other.radius + ai.radius * 0.6;
-                  if ((seg.x - ah.x) ** 2 + (seg.y - ah.y) ** 2 < r * r) {
-                    ai.alive = false; break;
-                  }
+            for (const other of s.ais) {
+              if (other === ai || !other.alive) continue;
+              let hitOther = false;
+              for (let i = 2; i < other.segments.length; i += 2) {
+                const seg = other.segments[i];
+                const r = other.radius + ai.radius * 0.6;
+                if ((seg.x - ah.x) ** 2 + (seg.y - ah.y) ** 2 < r * r) {
+                  hitOther = true; break;
                 }
-                if (!ai.alive) break;
+              }
+              if (hitOther) {
+                if (ai.boost && !other.boost) {
+                  other.alive = false;
+                } else {
+                  ai.alive = false;
+                }
+                break;
               }
             }
           }
