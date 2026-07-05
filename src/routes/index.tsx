@@ -7,6 +7,7 @@ import gameplay2 from "@/assets/images/snake_gameplay_2.jpg.asset.json";
 import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
 import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
 import { PiAuth } from "@/components/PiAuth";
+import { PiPayButton } from "@/components/PiPayButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -930,6 +931,7 @@ function NeonSlither() {
               Devour glowing energy. Out-slither 14 rivals.<br/>Become the apex serpent.
             </p>
             <PiAuth />
+            <PiPayButton amount={1} memo="PiRC Governance Contribution" metadata={{ type: "pirc_proposal", proposalId: "PiRC-101" }} />
             <input
               value={playerName}
               onChange={(e) => {
