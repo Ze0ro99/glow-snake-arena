@@ -839,6 +839,16 @@ function NeonSlither() {
         ctx.fillRect(0, 0, w, h);
       }
 
+      // neon hit flash on boosted head vs non-boosting body
+      if (s.hitFlash > 0) {
+        const alpha = s.hitFlash * 0.5;
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = `rgba(255, 0, 200, ${alpha * 0.6})`;
+        ctx.fillRect(0, 0, w, h);
+        s.hitFlash *= 0.9;
+      }
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
