@@ -530,17 +530,25 @@ function NeonSlither() {
             }
           }
           if (!s.running) break;
-          // Player head vs AI body -> player dies
+          // Player head vs AI body -> player dies (attacker dies on body hit)
           let bodyHit = false;
+          let bodyHitX = 0, bodyHitY = 0;
           for (let i = 2; i < ai.segments.length; i++) {
             const seg = ai.segments[i];
             const r = ai.radius + s.player.radius * 0.6;
             if ((seg.x - ph.x) ** 2 + (seg.y - ph.y) ** 2 < r * r) {
               bodyHit = true;
+              bodyHitX = seg.x; bodyHitY = seg.y;
               break;
             }
           }
           if (bodyHit) {
+            if (s.player.boost && !ai.boost) {
+              playSound("impact");
+              s.hitFlash = 1;
+              s.shake = 25;
+              explode(bodyHitX, bodyHitY, ai.color, 45);
+            }
             endGame();
             break;
           }
