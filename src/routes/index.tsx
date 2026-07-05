@@ -232,7 +232,7 @@ function NeonSlither() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  const playSound = (type: "eat" | "boost" | "death") => {
+  const playSound = (type: "eat" | "boost" | "death" | "impact") => {
     const s = stateRef.current;
     try {
       if (!s.audio) s.audio = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -249,6 +249,12 @@ function NeonSlither() {
         o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(80, t + 0.2);
         g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
         o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.22);
+      } else if (type === "impact") {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = "square";
+        o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.18);
+        g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.2);
       } else {
         const o = ctx.createOscillator(); const g = ctx.createGain();
         o.type = "square";
