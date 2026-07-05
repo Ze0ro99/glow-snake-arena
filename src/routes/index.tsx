@@ -155,6 +155,7 @@ function NeonSlither() {
     stars: { x: number; y: number; z: number; c: string }[];
     pointer: Vec;
     boost: boolean;
+    hitFlash: number;
     running: boolean;
     paused: boolean;
     cam: Vec;
@@ -163,7 +164,7 @@ function NeonSlither() {
     audio: AudioContext | null;
   }>({
     player: null, ais: [], foods: [], particles: [], stars: [],
-    pointer: { x: 0, y: 0 }, boost: false, running: false, paused: false,
+    pointer: { x: 0, y: 0 }, boost: false, hitFlash: 0, running: false, paused: false,
     cam: { x: WORLD/2, y: WORLD/2 }, shake: 0, last: 0, audio: null,
   });
 
