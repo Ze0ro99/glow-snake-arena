@@ -50,7 +50,7 @@ export function PiAuth() {
     try {
       await loadPiSdk();
       await Promise.resolve(window.Pi!.init({ version: "2.0" }));
-      const auth = await window.Pi!.authenticate(["username"], () => {});
+      const auth = await window.Pi!.authenticate(["username", "payments"], () => {});
       const result = await verify({ data: { accessToken: auth.accessToken } });
       setUsername(result.username);
       setStatus("ready");
