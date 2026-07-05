@@ -155,6 +155,7 @@ function NeonSlither() {
     stars: { x: number; y: number; z: number; c: string }[];
     pointer: Vec;
     boost: boolean;
+    hitFlash: number;
     running: boolean;
     paused: boolean;
     cam: Vec;
@@ -163,7 +164,7 @@ function NeonSlither() {
     audio: AudioContext | null;
   }>({
     player: null, ais: [], foods: [], particles: [], stars: [],
-    pointer: { x: 0, y: 0 }, boost: false, running: false, paused: false,
+    pointer: { x: 0, y: 0 }, boost: false, hitFlash: 0, running: false, paused: false,
     cam: { x: WORLD/2, y: WORLD/2 }, shake: 0, last: 0, audio: null,
   });
 
@@ -231,7 +232,7 @@ function NeonSlither() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  const playSound = (type: "eat" | "boost" | "death") => {
+  const playSound = (type: "eat" | "boost" | "death" | "impact") => {
     const s = stateRef.current;
     try {
       if (!s.audio) s.audio = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -248,6 +249,12 @@ function NeonSlither() {
         o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(80, t + 0.2);
         g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
         o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.22);
+      } else if (type === "impact") {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = "square";
+        o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.18);
+        g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.2);
       } else {
         const o = ctx.createOscillator(); const g = ctx.createGain();
         o.type = "square";
@@ -523,17 +530,25 @@ function NeonSlither() {
             }
           }
           if (!s.running) break;
-          // Player head vs AI body -> player dies
+          // Player head vs AI body -> player dies (attacker dies on body hit)
           let bodyHit = false;
+          let bodyHitX = 0, bodyHitY = 0;
           for (let i = 2; i < ai.segments.length; i++) {
             const seg = ai.segments[i];
             const r = ai.radius + s.player.radius * 0.6;
             if ((seg.x - ph.x) ** 2 + (seg.y - ph.y) ** 2 < r * r) {
               bodyHit = true;
+              bodyHitX = seg.x; bodyHitY = seg.y;
               break;
             }
           }
           if (bodyHit) {
+            if (s.player.boost && !ai.boost) {
+              playSound("impact");
+              s.hitFlash = 1;
+              s.shake = 25;
+              explode(bodyHitX, bodyHitY, ai.color, 45);
+            }
             endGame();
             break;
           }
@@ -822,6 +837,16 @@ function NeonSlither() {
       if (s.player && s.running && s.boost) {
         ctx.fillStyle = "rgba(255,255,255,0.05)";
         ctx.fillRect(0, 0, w, h);
+      }
+
+      // neon hit flash on boosted head vs non-boosting body
+      if (s.hitFlash > 0) {
+        const alpha = s.hitFlash * 0.5;
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = `rgba(255, 0, 200, ${alpha * 0.6})`;
+        ctx.fillRect(0, 0, w, h);
+        s.hitFlash *= 0.9;
       }
 
       raf = requestAnimationFrame(tick);
