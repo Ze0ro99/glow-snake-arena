@@ -10,6 +10,15 @@ declare global {
         scopes: string[],
         onIncompletePaymentFound: (p: unknown) => void,
       ) => Promise<{ accessToken: string; user: { uid: string; username: string } }>;
+      createPayment?: (
+        payment: { amount: number; memo: string; metadata: Record<string, unknown> },
+        callbacks: {
+          onReadyForServerApproval: (paymentId: string) => void;
+          onReadyForServerCompletion: (paymentId: string, txid: string) => void;
+          onCancel: (paymentId: string) => void;
+          onError: (error: Error, payment?: unknown) => void;
+        },
+      ) => Promise<unknown>;
     };
   }
 }
