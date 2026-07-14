@@ -6,30 +6,7 @@ import {
   cancelIncompletePiPayment,
 } from "@/lib/pi-payments.functions";
 
-declare global {
-  interface Window {
-    Pi?: {
-      init: (opts: { version: string; sandbox?: boolean }) => unknown;
-      authenticate: (
-        scopes: string[],
-        onIncompletePaymentFound: (p: unknown) => void,
-      ) => Promise<{ accessToken: string; user: { uid: string; username: string } }>;
-      createPayment: (
-        payment: {
-          amount: number;
-          memo: string;
-          metadata: Record<string, unknown>;
-        },
-        callbacks: {
-          onReadyForServerApproval: (paymentId: string) => void;
-          onReadyForServerCompletion: (paymentId: string, txid: string) => void;
-          onCancel: (paymentId: string) => void;
-          onError: (error: Error, payment?: unknown) => void;
-        },
-      ) => Promise<unknown>;
-    };
-  }
-}
+// Pi window type is declared in PiAuth.tsx
 
 type Network = "testnet" | "mainnet";
 
