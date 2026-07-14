@@ -7,6 +7,7 @@ import gameplay2 from "@/assets/images/snake_gameplay_2.jpg.asset.json";
 import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
 import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
 import { PiAuth } from "@/components/PiAuth";
+import { PiPaymentButton } from "@/components/PiPaymentButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -955,6 +956,7 @@ function NeonSlither() {
               Devour glowing energy. Out-slither 14 rivals.<br/>Become the apex serpent.
             </p>
             <PiAuth />
+            <PiPaymentButton amount={1} memo="Neon Slither 4D — support" network="mainnet" />
             <input
               value={playerName}
               onChange={(e) => {
