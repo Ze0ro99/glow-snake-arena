@@ -956,7 +956,7 @@ function NeonSlither() {
               Devour glowing energy. Out-slither 14 rivals.<br/>Become the apex serpent.
             </p>
             <PiAuth />
-            <PiPaymentButton amount={1} memo="Neon Slither 4D — support" network="mainnet" />
+            <PiPaymentButton amount={1} memo="Neon Slither 4D claim" />
             <input
               value={playerName}
               onChange={(e) => {
