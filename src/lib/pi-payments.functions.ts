@@ -16,7 +16,7 @@ function sessionConfig() {
   return {
     password,
     name: "pi_session",
-    cookie: { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" },
+    cookie: { httpOnly: true, secure: true, sameSite: "none" as const, path: "/" },
     maxAge: 60 * 60 * 24 * 7,
   };
 }
