@@ -49,6 +49,7 @@ async function reauthWithPi(
 
 function TestnetClaim() {
   const claim = useServerFn(claimTestnetPi);
+  const verify = useServerFn(verifyPiToken);
   const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -56,7 +57,15 @@ function TestnetClaim() {
     setStatus("processing");
     setMsg(null);
     try {
-      const res = await claim();
+      let res;
+      try {
+        res = await claim();
+      } catch (e) {
+        if (!isAuthError(e)) throw e;
+        setMsg("Session expired — reconnecting Pi…");
+        await reauthWithPi(verify);
+        res = await claim();
+      }
       setStatus("done");
       setMsg(`Sent ${res.amount} π · tx ${res.txid.slice(0, 10)}…`);
     } catch (e) {
