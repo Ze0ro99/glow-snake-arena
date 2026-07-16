@@ -6,8 +6,46 @@ import {
   cancelIncompletePiPayment,
   claimTestnetPi,
 } from "@/lib/pi-payments.functions";
+import { verifyPiToken } from "@/lib/pi-auth.functions";
 
 type Tab = "testnet" | "mainnet";
+
+const PI_SDK_URL = "https://sdk.minepi.com/pi-sdk.js";
+
+function loadPiSdk(): Promise<void> {
+  if (typeof window === "undefined") return Promise.reject(new Error("no window"));
+  if (window.Pi) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${PI_SDK_URL}"]`,
+    );
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", () => reject(new Error("Failed to load Pi SDK")));
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = PI_SDK_URL;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Failed to load Pi SDK"));
+    document.head.appendChild(s);
+  });
+}
+
+function isAuthError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e ?? "");
+  return /not authenticated|unauthorized|401/i.test(msg);
+}
+
+async function reauthWithPi(
+  verify: (args: { data: { accessToken: string } }) => Promise<unknown>,
+): Promise<void> {
+  await loadPiSdk();
+  await Promise.resolve(window.Pi!.init({ version: "2.0" }));
+  const auth = await window.Pi!.authenticate(["username", "payments"], () => {});
+  await verify({ data: { accessToken: auth.accessToken } });
+}
 
 function TestnetClaim() {
   const claim = useServerFn(claimTestnetPi);
