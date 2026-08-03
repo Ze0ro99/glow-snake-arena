@@ -50,10 +50,30 @@ export function PiAuth() {
   const verify = useServerFn(verifyPiToken);
   const fetchSession = useServerFn(getPiSession);
   const signOut = useServerFn(signOutPi);
+  const complete = useServerFn(completePiPayment);
   const [username, setUsername] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [error, setError] = useState<string | null>(null);
   const autoRan = useRef(false);
+
+  // Never silently drop an in-flight payment: finish it through the backend.
+  const onIncompletePaymentFound = (payment: unknown) => {
+    const p = payment as {
+      identifier?: string;
+      transaction?: { txid?: string } | null;
+      network?: string;
+    } | null;
+    const paymentId = p?.identifier;
+    const txid = p?.transaction?.txid;
+    if (!paymentId || !txid) return;
+    void complete({
+      data: {
+        paymentId,
+        txid,
+        network: p?.network === "Pi Network" ? "mainnet" : "testnet",
+      },
+    }).catch(() => {});
+  };
 
   const runAuth = async () => {
     setStatus("loading");
@@ -61,7 +81,10 @@ export function PiAuth() {
     try {
       await loadPiSdk();
       await Promise.resolve(window.Pi!.init({ version: "2.0" }));
-      const auth = await window.Pi!.authenticate(["username"], () => {});
+      const auth = await window.Pi!.authenticate(
+        ["username", "payments"],
+        onIncompletePaymentFound,
+      );
       const result = await verify({ data: { accessToken: auth.accessToken } });
       setUsername(result.username);
       setStatus("ready");
@@ -70,6 +93,7 @@ export function PiAuth() {
       setError(e instanceof Error ? e.message : "Authentication failed");
     }
   };
+
 
   useEffect(() => {
     let cancelled = false;
