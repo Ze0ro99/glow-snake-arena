@@ -6,7 +6,7 @@ import {
   cancelIncompletePiPayment,
   claimTestnetPi,
 } from "@/lib/pi-payments.functions";
-import { verifyPiToken } from "@/lib/pi-auth.functions";
+import { verifyPiToken, getPiSession } from "@/lib/pi-auth.functions";
 
 type Tab = "testnet" | "mainnet";
 
