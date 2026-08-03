@@ -56,17 +56,41 @@ async function requireUser() {
   return session;
 }
 
+const PAYMENT_ID_RE = /^[A-Za-z0-9_-]{6,128}$/;
+const TXID_RE = /^[A-Za-z0-9]{6,128}$/;
+
+function parsePaymentId(value: unknown): string {
+  if (typeof value !== "string" || !PAYMENT_ID_RE.test(value)) {
+    throw new Error("paymentId required");
+  }
+  return value;
+}
+
+function parseNetwork(value: unknown): "testnet" | "mainnet" {
+  return value === "mainnet" ? "mainnet" : "testnet";
+}
+
 // ---------------- U2A ----------------
 
+// Pi payment ids are guessable/observable, so every payment action is bound to
+// the Pi uid that first approved it. Without this, any signed-in Pi user could
+// approve, complete or cancel another user's payment (IDOR).
+
 export const approvePiPayment = createServerFn({ method: "POST" })
-  .inputValidator((d: { paymentId: string; network?: "testnet" | "mainnet" }) => {
-    if (!d?.paymentId || typeof d.paymentId !== "string") {
-      throw new Error("paymentId required");
-    }
-    return { paymentId: d.paymentId, network: d.network ?? "testnet" };
-  })
+  .inputValidator((d: { paymentId: string; network?: "testnet" | "mainnet" }) => ({
+    paymentId: parsePaymentId(d?.paymentId),
+    network: parseNetwork(d?.network),
+  }))
   .handler(async ({ data }) => {
-    await requireUser();
+    const session = await requireUser();
+    const { claimPaymentOwnership } = await import("./pi-payments.server");
+    const owns = await claimPaymentOwnership(
+      data.paymentId,
+      session.data.uid,
+      data.network,
+      "u2a",
+    );
+    if (!owns) throw new Error("This payment does not belong to your Pi account");
     return piFetch(data.network, `/v2/payments/${data.paymentId}/approve`, {
       method: "POST",
     });
@@ -75,16 +99,22 @@ export const approvePiPayment = createServerFn({ method: "POST" })
 export const completePiPayment = createServerFn({ method: "POST" })
   .inputValidator(
     (d: { paymentId: string; txid: string; network?: "testnet" | "mainnet" }) => {
-      if (!d?.paymentId || !d?.txid) throw new Error("paymentId and txid required");
+      if (typeof d?.txid !== "string" || !TXID_RE.test(d.txid)) {
+        throw new Error("txid required");
+      }
       return {
-        paymentId: d.paymentId,
+        paymentId: parsePaymentId(d?.paymentId),
         txid: d.txid,
-        network: d.network ?? "testnet",
+        network: parseNetwork(d?.network),
       };
     },
   )
   .handler(async ({ data }) => {
-    await requireUser();
+    const session = await requireUser();
+    const { assertPaymentOwner } = await import("./pi-payments.server");
+    if (!(await assertPaymentOwner(data.paymentId, session.data.uid))) {
+      throw new Error("This payment does not belong to your Pi account");
+    }
     return piFetch(data.network, `/v2/payments/${data.paymentId}/complete`, {
       method: "POST",
       body: JSON.stringify({ txid: data.txid }),
@@ -92,12 +122,16 @@ export const completePiPayment = createServerFn({ method: "POST" })
   });
 
 export const cancelIncompletePiPayment = createServerFn({ method: "POST" })
-  .inputValidator((d: { paymentId: string; network?: "testnet" | "mainnet" }) => {
-    if (!d?.paymentId) throw new Error("paymentId required");
-    return { paymentId: d.paymentId, network: d.network ?? "testnet" };
-  })
+  .inputValidator((d: { paymentId: string; network?: "testnet" | "mainnet" }) => ({
+    paymentId: parsePaymentId(d?.paymentId),
+    network: parseNetwork(d?.network),
+  }))
   .handler(async ({ data }) => {
-    await requireUser();
+    const session = await requireUser();
+    const { assertPaymentOwner } = await import("./pi-payments.server");
+    if (!(await assertPaymentOwner(data.paymentId, session.data.uid))) {
+      throw new Error("This payment does not belong to your Pi account");
+    }
     return piFetch(data.network, `/v2/payments/${data.paymentId}/cancel`, {
       method: "POST",
     });
