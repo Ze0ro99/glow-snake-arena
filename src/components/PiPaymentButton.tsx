@@ -41,15 +41,23 @@ function isAuthError(e: unknown): boolean {
 async function reauthWithPi(
   verify: (args: { data: { accessToken: string } }) => Promise<unknown>,
 ): Promise<void> {
-  await loadPiSdk();
-  await Promise.resolve(window.Pi!.init({ version: "2.0" }));
-  const auth = await window.Pi!.authenticate(["username", "payments"], () => {});
+  if (typeof window === "undefined" || !("Pi" in window)) {
+    await loadPiSdk().catch(() => {
+      throw new Error("Open this app inside the Pi Browser to claim.");
+    });
+  }
+  if (!window.Pi?.authenticate) {
+    throw new Error("Open this app inside the Pi Browser to claim.");
+  }
+  await Promise.resolve(window.Pi.init({ version: "2.0" }));
+  const auth = await window.Pi.authenticate(["username", "payments"], () => {});
   await verify({ data: { accessToken: auth.accessToken } });
 }
 
 function TestnetClaim() {
   const claim = useServerFn(claimTestnetPi);
   const verify = useServerFn(verifyPiToken);
+  const session = useServerFn(getPiSession);
   const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -57,6 +65,14 @@ function TestnetClaim() {
     setStatus("processing");
     setMsg(null);
     try {
+      // Make sure a Pi session exists BEFORE hitting the claim endpoint, so the
+      // server never has to throw "Not authenticated with Pi" at us.
+      const current = await session().catch(() => ({ authenticated: false }));
+      if (!current.authenticated) {
+        setMsg("Connecting your Pi account…");
+        await reauthWithPi(verify);
+      }
+
       let res;
       try {
         res = await claim();
@@ -70,7 +86,13 @@ function TestnetClaim() {
       setMsg(`Sent ${res.amount} π · tx ${res.txid.slice(0, 10)}…`);
     } catch (e) {
       setStatus("error");
-      setMsg(e instanceof Error ? e.message : "Claim failed");
+      setMsg(
+        e instanceof Error
+          ? isAuthError(e)
+            ? "Sign in with Pi first (open in the Pi Browser)."
+            : e.message
+          : "Claim failed",
+      );
     }
   };
 
