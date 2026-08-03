@@ -165,57 +165,62 @@ export const claimTestnetPi = createServerFn({ method: "POST" }).handler(
     const amount = 1;
     const memo = "Neon Slither 4D claim";
 
-    // 1) Create A2U payment via Pi Platform.
-    const created = (await piFetch(network, `/v2/payments`, {
-      method: "POST",
-      body: JSON.stringify({
-        payment: {
-          amount,
-          memo,
-          metadata: { kind: "a2u-claim", ts: Date.now() },
-          uid,
-        },
-      }),
-    })) as { identifier: string; recipient: string };
-
-    // 2) Build + sign + submit the Stellar transaction on Pi Testnet.
-    const sdk = await import("@stellar/stellar-sdk");
-    const { Horizon, Keypair, TransactionBuilder, Operation, Asset, Networks, Memo } =
-      sdk;
-    const HORIZON = "https://api.testnet.minepi.com";
-    const NETWORK_PASSPHRASE = "Pi Testnet";
-    const server = new Horizon.Server(HORIZON);
-    const kp = Keypair.fromSecret(seed);
-    const account = await server.loadAccount(kp.publicKey());
-    const fee = await server.fetchBaseFee();
-
-    const tx = new TransactionBuilder(account, {
-      fee: String(fee),
-      networkPassphrase: NETWORK_PASSPHRASE,
-    })
-      .addOperation(
-        Operation.payment({
-          destination: created.recipient,
-          asset: Asset.native(),
-          amount: amount.toFixed(7),
+    try {
+      // 1) Create A2U payment via Pi Platform.
+      const created = (await piFetch(network, `/v2/payments`, {
+        method: "POST",
+        body: JSON.stringify({
+          payment: {
+            amount,
+            memo,
+            metadata: { kind: "a2u-claim", ts: Date.now() },
+            uid,
+          },
         }),
-      )
-      .addMemo(Memo.text(`pi:${created.identifier}`.slice(0, 28)))
-      .setTimeout(60)
-      .build();
-    tx.sign(kp);
-    const submitted = (await server.submitTransaction(tx)) as { hash: string };
-    const txid = submitted.hash;
+      })) as { identifier: string; recipient: string };
 
-    // 3) Complete the payment with the txid.
-    await piFetch(network, `/v2/payments/${created.identifier}/complete`, {
-      method: "POST",
-      body: JSON.stringify({ txid }),
-    });
+      // 2) Build + sign + submit the Stellar transaction on Pi Testnet.
+      const sdk = await import("@stellar/stellar-sdk");
+      const { Horizon, Keypair, TransactionBuilder, Operation, Asset, Memo } = sdk;
+      const HORIZON = "https://api.testnet.minepi.com";
+      const NETWORK_PASSPHRASE = "Pi Testnet";
+      const server = new Horizon.Server(HORIZON);
+      const kp = Keypair.fromSecret(seed);
+      const account = await server.loadAccount(kp.publicKey());
+      const fee = await server.fetchBaseFee();
 
-    await session.update({ ...session.data, claimedTestnet: true });
+      const tx = new TransactionBuilder(account, {
+        fee: String(fee),
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(
+          Operation.payment({
+            destination: created.recipient,
+            asset: Asset.native(),
+            amount: amount.toFixed(7),
+          }),
+        )
+        .addMemo(Memo.text(`pi:${created.identifier}`.slice(0, 28)))
+        .setTimeout(60)
+        .build();
+      tx.sign(kp);
+      const submitted = (await server.submitTransaction(tx)) as { hash: string };
+      const txid = submitted.hash;
 
-    return { ok: true, paymentId: created.identifier, txid, amount };
+      // 3) Complete the payment with the txid.
+      await piFetch(network, `/v2/payments/${created.identifier}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ txid }),
+      });
+
+      await finalizeTestnetClaim(uid, created.identifier, txid);
+
+      return { ok: true, paymentId: created.identifier, txid, amount };
+    } catch (e) {
+      // Payout never landed — free the reservation so the user can retry.
+      await releaseTestnetClaim(uid);
+      throw e;
+    }
   },
 );
 
