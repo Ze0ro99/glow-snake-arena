@@ -7,6 +7,12 @@ import {
   claimTestnetPi,
 } from "@/lib/pi-payments.functions";
 import { verifyPiToken, getPiSession } from "@/lib/pi-auth.functions";
+import {
+  PI_PRODUCTS,
+  PI_PRODUCT_LIST,
+  type PiProductId,
+} from "@/lib/pi-products";
+
 
 type Tab = "testnet" | "mainnet";
 
