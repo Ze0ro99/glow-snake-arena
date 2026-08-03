@@ -126,36 +126,67 @@ function TestnetClaim() {
   );
 }
 
-function MainnetPay({ amount = 1 }: { amount?: number }) {
+function MainnetPay() {
   const approve = useServerFn(approvePiPayment);
   const complete = useServerFn(completePiPayment);
   const cancel = useServerFn(cancelIncompletePiPayment);
+  const verify = useServerFn(verifyPiToken);
+  const session = useServerFn(getPiSession);
+  const [productId, setProductId] = useState<PiProductId>("arena_entry");
   const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
   const [msg, setMsg] = useState<string | null>(null);
 
+  const product = PI_PRODUCTS[productId];
+
+  const completeInFlight = (payment: unknown) => {
+    const p = payment as {
+      identifier?: string;
+      transaction?: { txid?: string } | null;
+    } | null;
+    if (!p?.identifier || !p.transaction?.txid) return;
+    void complete({
+      data: { paymentId: p.identifier, txid: p.transaction.txid, network: "mainnet" },
+    }).catch(() => {});
+  };
+
   const pay = async () => {
-    if (!window.Pi?.createPayment) {
-      setStatus("error");
-      setMsg("Open this app inside the Pi Browser.");
-      return;
-    }
     setStatus("processing");
     setMsg(null);
     try {
+      // Pi.init must be awaited before createPayment, and the session must carry
+      // the `payments` scope.
+      await loadPiSdk();
+      if (!window.Pi?.createPayment) {
+        throw new Error("Open this app inside the Pi Browser.");
+      }
+      await Promise.resolve(window.Pi.init({ version: "2.0" }));
+
+      const current = await session().catch(() => ({ authenticated: false }));
+      if (!current.authenticated) {
+        setMsg("Connecting your Pi account…");
+      }
+      const auth = await window.Pi.authenticate(
+        ["username", "payments"],
+        completeInFlight,
+      );
+      await verify({ data: { accessToken: auth.accessToken } });
+
       await window.Pi.createPayment(
         {
-          amount,
-          memo: "Neon Slither 4D — entry",
-          metadata: { product: "arena-entry", network: "mainnet", ts: Date.now() },
+          amount: product.amount,
+          memo: product.memo,
+          metadata: { product: product.id, network: "mainnet", ts: Date.now() },
         },
         {
           onReadyForServerApproval: async (paymentId) => {
-            await approve({ data: { paymentId, network: "mainnet" } });
+            await approve({
+              data: { paymentId, network: "mainnet", productId: product.id },
+            });
           },
           onReadyForServerCompletion: async (paymentId, txid) => {
             await complete({ data: { paymentId, txid, network: "mainnet" } });
             setStatus("done");
-            setMsg(`Paid ${amount} π · tx ${txid.slice(0, 10)}…`);
+            setMsg(`${product.label} unlocked · tx ${txid.slice(0, 10)}…`);
           },
           onCancel: async (paymentId) => {
             await cancel({ data: { paymentId, network: "mainnet" } }).catch(() => {});
@@ -176,12 +207,41 @@ function MainnetPay({ amount = 1 }: { amount?: number }) {
 
   return (
     <div>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        {PI_PRODUCT_LIST.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => {
+              setProductId(p.id);
+              setStatus("idle");
+              setMsg(null);
+            }}
+            className={`rounded-lg border px-2 py-2 text-left transition ${
+              p.id === productId
+                ? "border-cyan-300 bg-cyan-300/10"
+                : "border-white/10 hover:border-cyan-300/40"
+            }`}
+          >
+            <div className="text-[11px] font-bold tracking-wide text-cyan-100">
+              {p.label}
+            </div>
+            <div className="mt-0.5 text-[9px] leading-tight text-cyan-200/60">
+              {p.description}
+            </div>
+            <div className="mt-1 text-[10px] font-bold text-cyan-300">
+              {p.amount} π
+            </div>
+          </button>
+        ))}
+      </div>
       <button
         onClick={pay}
         disabled={status === "processing"}
         className="w-full rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 px-4 py-2 text-sm font-bold tracking-wider text-black transition hover:scale-[1.02] disabled:opacity-60"
       >
-        {status === "processing" ? "PROCESSING…" : `PAY ${amount} π (MAINNET)`}
+        {status === "processing"
+          ? "PROCESSING…"
+          : `BUY ${product.label.toUpperCase()} — ${product.amount} π`}
       </button>
       <p className="mt-2 text-[10px] leading-relaxed text-cyan-200/70">
         U2A (User-to-App) Mainnet payment. Requires Pi Browser and an approved
@@ -199,6 +259,7 @@ function MainnetPay({ amount = 1 }: { amount?: number }) {
     </div>
   );
 }
+
 
 export function PiPaymentButton() {
   const [tab, setTab] = useState<Tab>("testnet");
