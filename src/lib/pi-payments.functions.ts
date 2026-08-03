@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
+import { PI_PRODUCTS, isPiProductId, type PiProductId } from "./pi-products";
+
 
 // Pi payments — U2A (approve/complete) + A2U (server-initiated "claim").
 // Testnet vs Mainnet is switched by the server API key we present.
