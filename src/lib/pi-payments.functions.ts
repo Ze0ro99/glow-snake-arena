@@ -52,8 +52,9 @@ async function piFetch(
 
 async function requireUser() {
   const session = await useSession<PiSessionData>(sessionConfig());
-  if (!session.data?.uid) throw new Error("Not authenticated with Pi");
-  return session;
+  const uid = session.data?.uid;
+  if (!uid) throw new Error("Not authenticated with Pi");
+  return { session, uid, username: session.data?.username };
 }
 
 const PAYMENT_ID_RE = /^[A-Za-z0-9_-]{6,128}$/;
