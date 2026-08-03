@@ -26,11 +26,14 @@ function sessionConfig() {
 function serverKey(network: "testnet" | "mainnet") {
   const key =
     network === "mainnet"
-      ? process.env.PI_API_KEY_MAINNET
+      ? (process.env.PI_NETWORK_API_KEY_ACTIVE ??
+        process.env.PI_NETWORK_API_KEY ??
+        process.env.PI_API_KEY_MAINNET)
       : process.env.PI_API_KEY_TESTNET;
   if (!key) throw new Error(`Missing Pi server API key for ${network}`);
   return key;
 }
+
 
 async function piFetch(
   network: "testnet" | "mainnet",
