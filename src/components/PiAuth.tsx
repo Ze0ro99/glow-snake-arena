@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { verifyPiToken, getPiSession, signOutPi } from "@/lib/pi-auth.functions";
+import { completePiPayment } from "@/lib/pi-payments.functions";
+
 
 declare global {
   interface Window {
