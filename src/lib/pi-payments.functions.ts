@@ -83,11 +83,11 @@ export const approvePiPayment = createServerFn({ method: "POST" })
     network: parseNetwork(d?.network),
   }))
   .handler(async ({ data }) => {
-    const session = await requireUser();
+    const { uid } = await requireUser();
     const { claimPaymentOwnership } = await import("./pi-payments.server");
     const owns = await claimPaymentOwnership(
       data.paymentId,
-      session.data.uid,
+      uid,
       data.network,
       "u2a",
     );
@@ -111,9 +111,9 @@ export const completePiPayment = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    const session = await requireUser();
+    const { uid } = await requireUser();
     const { assertPaymentOwner } = await import("./pi-payments.server");
-    if (!(await assertPaymentOwner(data.paymentId, session.data.uid))) {
+    if (!(await assertPaymentOwner(data.paymentId, uid))) {
       throw new Error("This payment does not belong to your Pi account");
     }
     return piFetch(data.network, `/v2/payments/${data.paymentId}/complete`, {
@@ -128,9 +128,9 @@ export const cancelIncompletePiPayment = createServerFn({ method: "POST" })
     network: parseNetwork(d?.network),
   }))
   .handler(async ({ data }) => {
-    const session = await requireUser();
+    const { uid } = await requireUser();
     const { assertPaymentOwner } = await import("./pi-payments.server");
-    if (!(await assertPaymentOwner(data.paymentId, session.data.uid))) {
+    if (!(await assertPaymentOwner(data.paymentId, uid))) {
       throw new Error("This payment does not belong to your Pi account");
     }
     return piFetch(data.network, `/v2/payments/${data.paymentId}/cancel`, {
@@ -145,7 +145,7 @@ export const cancelIncompletePiPayment = createServerFn({ method: "POST" })
 // Mainnet wallet access.
 export const claimTestnetPi = createServerFn({ method: "POST" }).handler(
   async () => {
-    const session = await requireUser();
+    const { uid } = await requireUser();
     if (session.data.claimedTestnet) {
       throw new Error("You already claimed your Testnet π on this session.");
     }
