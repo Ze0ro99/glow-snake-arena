@@ -145,13 +145,21 @@ export const cancelIncompletePiPayment = createServerFn({ method: "POST" })
 // Mainnet wallet access.
 export const claimTestnetPi = createServerFn({ method: "POST" }).handler(
   async () => {
-    const { uid } = await requireUser();
-    if (session.data.claimedTestnet) {
-      throw new Error("You already claimed your Testnet π on this session.");
+    const { uid, username } = await requireUser();
+    const { reserveTestnetClaim, finalizeTestnetClaim, releaseTestnetClaim } =
+      await import("./pi-payments.server");
+
+    // Durable, per-Pi-account reservation. A fresh session/cookie cannot bypass
+    // this, so the reward can only ever be claimed once per Pi account.
+    if (!(await reserveTestnetClaim(uid, username))) {
+      throw new Error("This Pi account has already claimed the Testnet reward.");
     }
-    const uid = session.data.uid;
+
     const seed = process.env.PI_APP_WALLET_SEED_TESTNET;
-    if (!seed) throw new Error("App wallet seed not configured");
+    if (!seed) {
+      await releaseTestnetClaim(uid);
+      throw new Error("App wallet seed not configured");
+    }
 
     const network = "testnet" as const;
     const amount = 1;
