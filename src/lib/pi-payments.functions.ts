@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
+import { PI_PRODUCTS, isPiProductId, type PiProductId } from "./pi-products";
+
 
 // Pi payments — U2A (approve/complete) + A2U (server-initiated "claim").
 // Testnet vs Mainnet is switched by the server API key we present.
@@ -24,11 +26,14 @@ function sessionConfig() {
 function serverKey(network: "testnet" | "mainnet") {
   const key =
     network === "mainnet"
-      ? process.env.PI_API_KEY_MAINNET
+      ? (process.env.PI_NETWORK_API_KEY_ACTIVE ??
+        process.env.PI_NETWORK_API_KEY ??
+        process.env.PI_API_KEY_MAINNET)
       : process.env.PI_API_KEY_TESTNET;
   if (!key) throw new Error(`Missing Pi server API key for ${network}`);
   return key;
 }
+
 
 async function piFetch(
   network: "testnet" | "mainnet",
@@ -78,10 +83,17 @@ function parseNetwork(value: unknown): "testnet" | "mainnet" {
 // approve, complete or cancel another user's payment (IDOR).
 
 export const approvePiPayment = createServerFn({ method: "POST" })
-  .inputValidator((d: { paymentId: string; network?: "testnet" | "mainnet" }) => ({
-    paymentId: parsePaymentId(d?.paymentId),
-    network: parseNetwork(d?.network),
-  }))
+  .inputValidator(
+    (d: {
+      paymentId: string;
+      network?: "testnet" | "mainnet";
+      productId?: PiProductId;
+    }) => ({
+      paymentId: parsePaymentId(d?.paymentId),
+      network: parseNetwork(d?.network),
+      productId: isPiProductId(d?.productId) ? d.productId : undefined,
+    }),
+  )
   .handler(async ({ data }) => {
     const { uid } = await requireUser();
     const { claimPaymentOwnership } = await import("./pi-payments.server");
@@ -92,10 +104,39 @@ export const approvePiPayment = createServerFn({ method: "POST" })
       "u2a",
     );
     if (!owns) throw new Error("This payment does not belong to your Pi account");
-    return piFetch(data.network, `/v2/payments/${data.paymentId}/approve`, {
+
+    // Server-side validation: the pending payment must match our catalog entry.
+    const pending = (await piFetch(
+      data.network,
+      `/v2/payments/${data.paymentId}`,
+      { method: "GET" },
+    )) as {
+      amount?: number | string;
+      memo?: string;
+      metadata?: { product?: unknown };
+      user_uid?: string;
+    };
+
+    if (pending.user_uid && pending.user_uid !== uid) {
+      throw new Error("This payment does not belong to your Pi account");
+    }
+
+    const productId = isPiProductId(pending.metadata?.product)
+      ? pending.metadata!.product
+      : data.productId;
+    if (!productId) throw new Error("Unknown payment product");
+    const product = PI_PRODUCTS[productId];
+
+    if (Number(pending.amount) !== product.amount || pending.memo !== product.memo) {
+      throw new Error("Payment does not match the requested product");
+    }
+
+    await piFetch(data.network, `/v2/payments/${data.paymentId}/approve`, {
       method: "POST",
     });
+    return { ok: true as const, product };
   });
+
 
 export const completePiPayment = createServerFn({ method: "POST" })
   .inputValidator(
