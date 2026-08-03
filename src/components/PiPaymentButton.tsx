@@ -298,7 +298,7 @@ export function PiPaymentButton() {
           </button>
         </div>
       </div>
-      {tab === "testnet" ? <TestnetClaim /> : <MainnetPay amount={1} />}
+      {tab === "testnet" ? <TestnetClaim /> : <MainnetPay />}
     </div>
   );
 }
