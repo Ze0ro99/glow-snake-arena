@@ -1,0 +1,18 @@
+{
+  "name": "Neon Slither 4D Token",
+  "symbol": "NS4D",
+  "decimals": 0,
+  "description": "Pilot token for Neon Slither 4D — used by the app for storefront and in-app purchases.",
+  "homepage": "https://glow-snake-arena.lovable.app/",
+  "author": {
+    "name": "Neon Slither Team",
+    "url": "https://lovable.app/"
+  },
+  "media": {
+    "logo": "logo.png"
+  },
+  "metadata": {
+    "product": "game-token",
+    "usage": "in-app credits, purchases, rewards"
+  }
+}
