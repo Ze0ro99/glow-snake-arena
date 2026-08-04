@@ -1045,7 +1045,7 @@ function NeonSlither() {
               </button>
               <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
                 Rewarded ad served by CiDi Games. Credits are granted only after a
-                verified完 completion.
+                verified ad completion.
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
             </div>
