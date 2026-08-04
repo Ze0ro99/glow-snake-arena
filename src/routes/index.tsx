@@ -8,6 +8,8 @@ import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
 import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
 import { PiAuth } from "@/components/PiAuth";
 import { PiPaymentButton } from "@/components/PiPaymentButton";
+import { initCidi, showRewardedAd, reportTournamentScore, type CidiStatus } from "@/lib/cidi";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -184,37 +186,65 @@ function NeonSlither() {
   const [selectedMap, setSelectedMap] = useState<string>("grid");
   const [panel, setPanel] = useState<"none" | "settings" | "skins" | "maps">("none");
 
+  const [storageReady, setStorageReady] = useState(false);
+  const [cidi, setCidi] = useState<CidiStatus | null>(null);
+  const [adMsg, setAdMsg] = useState<string | null>(null);
+  const [adBusy, setAdBusy] = useState(false);
+
   useEffect(() => {
-    const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
-    setBest(stored);
-    try {
-      const lb = JSON.parse(localStorage.getItem("neonSlither4DLeaderboard") || "[]");
-      if (Array.isArray(lb)) setLeaderboard(lb);
-    } catch {}
-    const n = localStorage.getItem("neonSlither4DName");
-    if (n) setPlayerName(n);
-    try {
-      const st = JSON.parse(localStorage.getItem("neonSlither4DSettings") || "null");
-      if (st && typeof st === "object") setSettings({ ...DEFAULT_SETTINGS, ...st });
-    } catch {}
-    const sk = localStorage.getItem("neonSlither4DSkin");
-    if (sk) setSelectedSkin(sk);
-    try {
-      const ow = JSON.parse(localStorage.getItem("neonSlither4DOwned") || "null");
-      if (Array.isArray(ow)) setOwnedSkins(Array.from(new Set([...ow, "cyan", "magenta"])));
-    } catch {}
-    const c = parseInt(localStorage.getItem("neonSlither4DCoins") || "0");
-    if (!isNaN(c)) setCoins(c);
-    const mp = localStorage.getItem("neonSlither4DMap");
-    if (mp) setSelectedMap(mp);
+    let alive = true;
+    // CiDi rule: CiDiSDK.init() must run before the first localStorage access.
+    void initCidi().then((s) => {
+      if (!alive) return;
+      setCidi(s);
+      const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
+      setBest(stored);
+      try {
+        const lb = JSON.parse(localStorage.getItem("neonSlither4DLeaderboard") || "[]");
+        if (Array.isArray(lb)) setLeaderboard(lb);
+      } catch {}
+      const n = localStorage.getItem("neonSlither4DName");
+      if (n) setPlayerName(n);
+      try {
+        const st = JSON.parse(localStorage.getItem("neonSlither4DSettings") || "null");
+        if (st && typeof st === "object") setSettings({ ...DEFAULT_SETTINGS, ...st });
+      } catch {}
+      const sk = localStorage.getItem("neonSlither4DSkin");
+      if (sk) setSelectedSkin(sk);
+      try {
+        const ow = JSON.parse(localStorage.getItem("neonSlither4DOwned") || "null");
+        if (Array.isArray(ow)) setOwnedSkins(Array.from(new Set([...ow, "cyan", "magenta"])));
+      } catch {}
+      const c = parseInt(localStorage.getItem("neonSlither4DCoins") || "0");
+      if (!isNaN(c)) setCoins(c);
+      const mp = localStorage.getItem("neonSlither4DMap");
+      if (mp) setSelectedMap(mp);
+      setStorageReady(true);
+    });
+    return () => { alive = false; };
   }, []);
 
-  // Persist settings/skin/map
-  useEffect(() => { localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { localStorage.setItem("neonSlither4DSkin", selectedSkin); }, [selectedSkin]);
-  useEffect(() => { localStorage.setItem("neonSlither4DOwned", JSON.stringify(ownedSkins)); }, [ownedSkins]);
-  useEffect(() => { localStorage.setItem("neonSlither4DCoins", String(coins)); }, [coins]);
-  useEffect(() => { localStorage.setItem("neonSlither4DMap", selectedMap); }, [selectedMap]);
+  // Persist settings/skin/map (only after the SDK-gated storage init completed)
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DSkin", selectedSkin); }, [selectedSkin, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DOwned", JSON.stringify(ownedSkins)); }, [ownedSkins, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DCoins", String(coins)); }, [coins, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DMap", selectedMap); }, [selectedMap, storageReady]);
+
+  const watchAd = async () => {
+    setAdBusy(true);
+    setAdMsg(null);
+    const ok = await showRewardedAd();
+    // Reward is granted only when the platform reports success === true.
+    if (ok) {
+      setCoins((c) => c + 250);
+      setAdMsg("+250 ◎ credits granted");
+    } else {
+      setAdMsg("No reward — ad not completed or unavailable here.");
+    }
+    setAdBusy(false);
+  };
+
 
   // Resize
   useEffect(() => {
@@ -359,7 +389,10 @@ function NeonSlither() {
       setLeaderboard(next);
       localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next));
     } catch {}
+    // CiDi tournament ranking: report only once the run result is final.
+    void reportTournamentScore(finalLen);
     setTimeout(() => setScreen("over"), 800);
+
   };
 
   // Input
@@ -992,6 +1025,31 @@ function NeonSlither() {
               <span>MAP · <span className="text-fuchsia-300">{(MAPS.find(m=>m.id===selectedMap)?.name||"").toUpperCase()}</span></span>
               <span>◎ {coins}</span>
             </div>
+
+            {/* CiDi Games platform: rewarded ad + integration status */}
+            <div className="mt-4 rounded-xl border border-lime-400/30 bg-black/40 p-3 text-left">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-[10px] tracking-[0.3em] text-lime-300/80">CIDI GAMES</div>
+                <div className="text-[9px] tracking-widest text-gray-400">
+                  {cidi
+                    ? `${cidi.adsReady ? "ADS" : "ADS·OFF"} · ${cidi.loggedIn ? "SIGNED IN" : cidi.hasTempToken ? "TOKEN" : "GUEST"}`
+                    : "LOADING…"}
+                </div>
+              </div>
+              <button
+                onClick={watchAd}
+                disabled={adBusy}
+                className="w-full rounded-lg bg-gradient-to-r from-lime-400 to-emerald-500 px-4 py-2 text-sm font-bold tracking-wider text-black transition hover:scale-[1.02] disabled:opacity-60"
+              >
+                {adBusy ? "LOADING AD…" : "WATCH AD · +250 ◎"}
+              </button>
+              <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
+                Rewarded ad served by CiDi Games. Credits are granted only after a
+                verified ad completion.
+              </p>
+              {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
+            </div>
+
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-cyan-300/70 mb-1">STEER</div>
