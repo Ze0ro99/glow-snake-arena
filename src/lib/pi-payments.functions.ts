@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { PI_PRODUCTS, isPiProductId, type PiProductId } from "./pi-products";
 
+// Feature flag: disable server-side Pi payments in CiDi/offline deployments
+const PI_PAYMENTS_ENABLED = (process.env.PI_PAYMENTS_ENABLED ?? "true").toLowerCase() !== "false";
+
+function ensurePaymentsEnabled() {
+  if (!PI_PAYMENTS_ENABLED) {
+    const e = new Error("Payments are disabled in this deployment (CiDi/offline mode).");
+    (e as any).status = 403;
+    throw e;
+  }
+}
 
 // Pi payments — U2A (approve/complete) + A2U (server-initiated "claim").
 // Testnet vs Mainnet is switched by the server API key we present.
@@ -95,6 +105,7 @@ export const approvePiPayment = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
+    ensurePaymentsEnabled();
     const { uid } = await requireUser();
     const { claimPaymentOwnership } = await import("./pi-payments.server");
     const owns = await claimPaymentOwnership(
@@ -152,6 +163,7 @@ export const completePiPayment = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
+    ensurePaymentsEnabled();
     const { uid } = await requireUser();
     const { assertPaymentOwner } = await import("./pi-payments.server");
     if (!(await assertPaymentOwner(data.paymentId, uid))) {
@@ -169,6 +181,7 @@ export const cancelIncompletePiPayment = createServerFn({ method: "POST" })
     network: parseNetwork(d?.network),
   }))
   .handler(async ({ data }) => {
+    ensurePaymentsEnabled();
     const { uid } = await requireUser();
     const { assertPaymentOwner } = await import("./pi-payments.server");
     if (!(await assertPaymentOwner(data.paymentId, uid))) {
@@ -186,6 +199,7 @@ export const cancelIncompletePiPayment = createServerFn({ method: "POST" })
 // Mainnet wallet access.
 export const claimTestnetPi = createServerFn({ method: "POST" }).handler(
   async () => {
+    ensurePaymentsEnabled();
     const { uid, username } = await requireUser();
     const { reserveTestnetClaim, finalizeTestnetClaim, releaseTestnetClaim } =
       await import("./pi-payments.server");
