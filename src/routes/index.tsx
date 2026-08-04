@@ -1025,6 +1025,31 @@ function NeonSlither() {
               <span>MAP · <span className="text-fuchsia-300">{(MAPS.find(m=>m.id===selectedMap)?.name||"").toUpperCase()}</span></span>
               <span>◎ {coins}</span>
             </div>
+
+            {/* CiDi Games platform: rewarded ad + integration status */}
+            <div className="mt-4 rounded-xl border border-lime-400/30 bg-black/40 p-3 text-left">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-[10px] tracking-[0.3em] text-lime-300/80">CIDI GAMES</div>
+                <div className="text-[9px] tracking-widest text-gray-400">
+                  {cidi
+                    ? `${cidi.adsReady ? "ADS" : "ADS·OFF"} · ${cidi.loggedIn ? "SIGNED IN" : cidi.hasTempToken ? "TOKEN" : "GUEST"}`
+                    : "LOADING…"}
+                </div>
+              </div>
+              <button
+                onClick={watchAd}
+                disabled={adBusy}
+                className="w-full rounded-lg bg-gradient-to-r from-lime-400 to-emerald-500 px-4 py-2 text-sm font-bold tracking-wider text-black transition hover:scale-[1.02] disabled:opacity-60"
+              >
+                {adBusy ? "LOADING AD…" : "WATCH AD · +250 ◎"}
+              </button>
+              <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
+                Rewarded ad served by CiDi Games. Credits are granted only after a
+                verified完 completion.
+              </p>
+              {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
+            </div>
+
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
                 <div className="text-[10px] tracking-widest text-cyan-300/70 mb-1">STEER</div>
