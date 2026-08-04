@@ -184,37 +184,65 @@ function NeonSlither() {
   const [selectedMap, setSelectedMap] = useState<string>("grid");
   const [panel, setPanel] = useState<"none" | "settings" | "skins" | "maps">("none");
 
+  const [storageReady, setStorageReady] = useState(false);
+  const [cidi, setCidi] = useState<CidiStatus | null>(null);
+  const [adMsg, setAdMsg] = useState<string | null>(null);
+  const [adBusy, setAdBusy] = useState(false);
+
   useEffect(() => {
-    const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
-    setBest(stored);
-    try {
-      const lb = JSON.parse(localStorage.getItem("neonSlither4DLeaderboard") || "[]");
-      if (Array.isArray(lb)) setLeaderboard(lb);
-    } catch {}
-    const n = localStorage.getItem("neonSlither4DName");
-    if (n) setPlayerName(n);
-    try {
-      const st = JSON.parse(localStorage.getItem("neonSlither4DSettings") || "null");
-      if (st && typeof st === "object") setSettings({ ...DEFAULT_SETTINGS, ...st });
-    } catch {}
-    const sk = localStorage.getItem("neonSlither4DSkin");
-    if (sk) setSelectedSkin(sk);
-    try {
-      const ow = JSON.parse(localStorage.getItem("neonSlither4DOwned") || "null");
-      if (Array.isArray(ow)) setOwnedSkins(Array.from(new Set([...ow, "cyan", "magenta"])));
-    } catch {}
-    const c = parseInt(localStorage.getItem("neonSlither4DCoins") || "0");
-    if (!isNaN(c)) setCoins(c);
-    const mp = localStorage.getItem("neonSlither4DMap");
-    if (mp) setSelectedMap(mp);
+    let alive = true;
+    // CiDi rule: CiDiSDK.init() must run before the first localStorage access.
+    void initCidi().then((s) => {
+      if (!alive) return;
+      setCidi(s);
+      const stored = parseInt(localStorage.getItem("neonSlither4DBest") || "0");
+      setBest(stored);
+      try {
+        const lb = JSON.parse(localStorage.getItem("neonSlither4DLeaderboard") || "[]");
+        if (Array.isArray(lb)) setLeaderboard(lb);
+      } catch {}
+      const n = localStorage.getItem("neonSlither4DName");
+      if (n) setPlayerName(n);
+      try {
+        const st = JSON.parse(localStorage.getItem("neonSlither4DSettings") || "null");
+        if (st && typeof st === "object") setSettings({ ...DEFAULT_SETTINGS, ...st });
+      } catch {}
+      const sk = localStorage.getItem("neonSlither4DSkin");
+      if (sk) setSelectedSkin(sk);
+      try {
+        const ow = JSON.parse(localStorage.getItem("neonSlither4DOwned") || "null");
+        if (Array.isArray(ow)) setOwnedSkins(Array.from(new Set([...ow, "cyan", "magenta"])));
+      } catch {}
+      const c = parseInt(localStorage.getItem("neonSlither4DCoins") || "0");
+      if (!isNaN(c)) setCoins(c);
+      const mp = localStorage.getItem("neonSlither4DMap");
+      if (mp) setSelectedMap(mp);
+      setStorageReady(true);
+    });
+    return () => { alive = false; };
   }, []);
 
-  // Persist settings/skin/map
-  useEffect(() => { localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { localStorage.setItem("neonSlither4DSkin", selectedSkin); }, [selectedSkin]);
-  useEffect(() => { localStorage.setItem("neonSlither4DOwned", JSON.stringify(ownedSkins)); }, [ownedSkins]);
-  useEffect(() => { localStorage.setItem("neonSlither4DCoins", String(coins)); }, [coins]);
-  useEffect(() => { localStorage.setItem("neonSlither4DMap", selectedMap); }, [selectedMap]);
+  // Persist settings/skin/map (only after the SDK-gated storage init completed)
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DSkin", selectedSkin); }, [selectedSkin, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DOwned", JSON.stringify(ownedSkins)); }, [ownedSkins, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DCoins", String(coins)); }, [coins, storageReady]);
+  useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DMap", selectedMap); }, [selectedMap, storageReady]);
+
+  const watchAd = async () => {
+    setAdBusy(true);
+    setAdMsg(null);
+    const ok = await showRewardedAd();
+    // Reward is granted only when the platform reports success === true.
+    if (ok) {
+      setCoins((c) => c + 250);
+      setAdMsg("+250 ◎ credits granted");
+    } else {
+      setAdMsg("No reward — ad not completed or unavailable here.");
+    }
+    setAdBusy(false);
+  };
+
 
   // Resize
   useEffect(() => {
