@@ -389,7 +389,10 @@ function NeonSlither() {
       setLeaderboard(next);
       localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next));
     } catch {}
+    // CiDi tournament ranking: report only once the run result is final.
+    void reportTournamentScore(finalLen);
     setTimeout(() => setScreen("over"), 800);
+
   };
 
   // Input
