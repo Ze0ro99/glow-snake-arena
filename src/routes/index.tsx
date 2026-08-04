@@ -8,6 +8,8 @@ import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
 import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
 import { PiAuth } from "@/components/PiAuth";
 import { PiPaymentButton } from "@/components/PiPaymentButton";
+import { initCidi, showRewardedAd, reportTournamentScore, type CidiStatus } from "@/lib/cidi";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
