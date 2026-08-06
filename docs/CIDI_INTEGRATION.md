@@ -14,7 +14,7 @@ Docs: https://developdoc.cidi.games · Developer Center: https://develop.cidi.ga
 | `client.auth.login()` before any reporting, re-run on every page load (token kept in memory only) | `initCidi()` / `reportTournamentScore()` | Done |
 | Rewarded ad via `CiDiSDK.showRewardedAd()`, reward granted **only** when `success === true` | `showRewardedAd()` + "WATCH AD · +250 ◎" button on the start screen | Done |
 | Tournament score reporting `client.report.tournamentScore({ score, reportedAt })` after the result is final | called from `endGame()` | Done |
-| Payment SDK NOT used on the offline route | Pi Network U2A/A2U payments are separate (see `PI_INTEGRATION.md`) | Done |
+| Payment SDK NOT used on the offline route | No payment/wallet SDK is loaded anywhere in this build | Done |
 | `API Secret` / `Callback Secret` never in client code | only the public `apiKey` is used client-side | Done |
 | App Authentication `validation-key.txt` on the production `https://` URL | `public/validation-key.txt` → https://glow-snake-arena.lovable.app/validation-key.txt | Done |
 | Errors, timeouts, retries handled | ad timeout 30s, script load timeout 8s, failures degrade to standalone play | Done |
