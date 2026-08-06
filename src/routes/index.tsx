@@ -1044,6 +1044,13 @@ function NeonSlither() {
                 verified ad completion.
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
+              <Link
+                to="/cidi-setup"
+                className="mt-3 block text-center text-[10px] tracking-[0.25em] text-lime-300/70 underline decoration-dotted hover:text-lime-200"
+              >
+                INTEGRATION CHECK
+              </Link>
+
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
