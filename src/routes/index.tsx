@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import cyberBanner from "@/assets/images/cyber_grid_banner.jpg.asset.json";
 import snakeIcon from "@/assets/images/neon_snake_icon.jpg.asset.json";
@@ -1044,6 +1044,13 @@ function NeonSlither() {
                 verified ad completion.
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
+              <Link
+                to="/cidi-setup"
+                className="mt-3 block text-center text-[10px] tracking-[0.25em] text-lime-300/70 underline decoration-dotted hover:text-lime-200"
+              >
+                INTEGRATION CHECK
+              </Link>
+
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
