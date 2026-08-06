@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import cyberBanner from "@/assets/images/cyber_grid_banner.jpg.asset.json";
 import snakeIcon from "@/assets/images/neon_snake_icon.jpg.asset.json";
