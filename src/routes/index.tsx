@@ -6,8 +6,6 @@ import gameplay1 from "@/assets/images/snake_gameplay.jpg.asset.json";
 import gameplay2 from "@/assets/images/snake_gameplay_2.jpg.asset.json";
 import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
 import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
-import { PiAuth } from "@/components/PiAuth";
-import { PiPaymentButton } from "@/components/PiPaymentButton";
 import { initCidi, showRewardedAd, reportTournamentScore, type CidiStatus } from "@/lib/cidi";
 
 
@@ -988,8 +986,6 @@ function NeonSlither() {
             <p className="text-base sm:text-lg text-gray-300 mb-6 leading-relaxed">
               Devour glowing energy. Out-slither 14 rivals.<br/>Become the apex serpent.
             </p>
-            <PiAuth />
-            <PiPaymentButton />
             <input
               value={playerName}
               onChange={(e) => {
