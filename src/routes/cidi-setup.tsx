@@ -109,9 +109,16 @@ function CidiSetup() {
           detail: "Browser client + platform proxy SDK. No CiDi game server is required.",
         },
         {
-          label: "No payment / wallet SDK on this route",
+          label: "In-game economy is CiDiCoin (CDC) only",
           ok: true,
-          detail: "No payment SDK is loaded anywhere in this build.",
+          detail:
+            "Skins and unlocks are priced in CDC earned in-game or granted by rewarded ads. No other currency is used.",
+        },
+        {
+          label: "No external crypto wallet linkage",
+          ok: true,
+          detail:
+            "No Pi wallet address, wallet SDK, payment SDK or third-party chain library is loaded, stored or referenced anywhere in this build.",
         },
         {
           label: "API Secret / Callback Secret never in client code",
