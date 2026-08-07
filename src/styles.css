@@ -142,3 +142,24 @@
     color: var(--color-foreground);
   }
 }
+
+/* Mobile webview hardening (CiDi / Pi Browser): portrait game canvas, no
+   pull-to-refresh, no double-tap zoom, no text selection during play. */
+@layer base {
+  html,
+  body {
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  canvas {
+    touch-action: none;
+  }
+}

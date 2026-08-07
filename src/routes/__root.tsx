@@ -77,7 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "theme-color", content: "#000000" },
+      { name: "screen-orientation", content: "portrait" },
+      { name: "format-detection", content: "telephone=no" },
       { title: "NEON SLITHER 4D" },
       { name: "description", content: "Neon Slither 4D is a mobile-first, single-player game offering an advanced Snake.io experience." },
       { name: "author", content: "Lovable" },
