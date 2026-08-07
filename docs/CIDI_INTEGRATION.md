@@ -15,6 +15,8 @@ Docs: https://developdoc.cidi.games · Developer Center: https://develop.cidi.ga
 | Rewarded ad via `CiDiSDK.showRewardedAd()`, reward granted **only** when `success === true` | `showRewardedAd()` + "WATCH AD · +250 ◎" button on the start screen | Done |
 | Tournament score reporting `client.report.tournamentScore({ score, reportedAt })` after the result is final | called from `endGame()` | Done |
 | Payment SDK NOT used on the offline route | No payment/wallet SDK is loaded anywhere in this build | Done |
+| Economy is CiDiCoin (CDC) only | Skins/unlocks priced in CDC earned in-game or via rewarded ads (`src/routes/index.tsx`) | Done |
+| No external crypto wallet linkage | No Pi wallet address, wallet SDK or chain library anywhere; legacy Pi tables dropped from the database | Done |
 | `API Secret` / `Callback Secret` never in client code | only the public `apiKey` is used client-side | Done |
 | App Authentication `validation-key.txt` on the production `https://` URL | `public/validation-key.txt` → https://glow-snake-arena.lovable.app/validation-key.txt | Done |
 | Errors, timeouts, retries handled | ad timeout 30s, script load timeout 8s, failures degrade to standalone play | Done |
