@@ -236,7 +236,7 @@ function NeonSlither() {
     // Reward is granted only when the platform reports success === true.
     if (ok) {
       setCoins((c) => c + 250);
-      setAdMsg("+250 ◎ credits granted");
+      setAdMsg("+250 CDC granted");
     } else {
       setAdMsg("No reward — ad not completed or unavailable here.");
     }
@@ -370,7 +370,7 @@ function NeonSlither() {
     s.shake = 30;
     const finalLen = Math.floor(s.player.length);
     setScore(finalLen);
-    // Reward credits: 1 credit per 4 length earned
+    // Reward CiDiCoin: 1 CDC per 4 length earned
     const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
     if (earned > 0) setCoins(c => c + earned);
     if (finalLen > best) {
@@ -1037,7 +1037,7 @@ function NeonSlither() {
                 disabled={adBusy}
                 className="w-full rounded-lg bg-gradient-to-r from-lime-400 to-emerald-500 px-4 py-2 text-sm font-bold tracking-wider text-black transition hover:scale-[1.02] disabled:opacity-60"
               >
-                {adBusy ? "LOADING AD…" : "WATCH AD · +250 ◎"}
+                {adBusy ? "LOADING AD…" : "WATCH AD · +250 CDC"}
               </button>
               <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
                 Rewarded ad served by CiDi Games. Credits are granted only after a
@@ -1120,7 +1120,7 @@ function NeonSlither() {
               {panel === "skins" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-                    <span>Earn ◎ credits by playing. Reach length to unlock rewards.</span>
+                    <span>Earn CiDiCoin (CDC) in-game. Spend it here — no external wallet.</span>
                     <span className="text-yellow-300 font-bold">◎ {coins}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
