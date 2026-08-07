@@ -14,57 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      pi_payments: {
-        Row: {
-          created_at: string
-          kind: string
-          network: string
-          payment_id: string
-          pi_uid: string
-        }
-        Insert: {
-          created_at?: string
-          kind?: string
-          network: string
-          payment_id: string
-          pi_uid: string
-        }
-        Update: {
-          created_at?: string
-          kind?: string
-          network?: string
-          payment_id?: string
-          pi_uid?: string
-        }
-        Relationships: []
-      }
-      pi_testnet_claims: {
-        Row: {
-          amount: number
-          created_at: string
-          payment_id: string | null
-          pi_uid: string
-          pi_username: string | null
-          txid: string | null
-        }
-        Insert: {
-          amount?: number
-          created_at?: string
-          payment_id?: string | null
-          pi_uid: string
-          pi_username?: string | null
-          txid?: string | null
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          payment_id?: string | null
-          pi_uid?: string
-          pi_username?: string | null
-          txid?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
