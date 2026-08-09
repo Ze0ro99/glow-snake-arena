@@ -245,6 +245,14 @@ function NeonSlither() {
   const [, setCidi] = useState<CidiStatus | null>(null);
   const [adMsg, setAdMsg] = useState<string | null>(null);
   const [adBusy, setAdBusy] = useState(false);
+  // Ad-revive: allowed once per game.
+  const [reviveUsed, setReviveUsed] = useState(false);
+  const [reviveBusy, setReviveBusy] = useState(false);
+  const [reviveMsg, setReviveMsg] = useState<string | null>(null);
+  const reviveUsedRef = useRef(false);
+  // Final length of a run whose result is not committed yet (a revive is still offered).
+  const pendingRunRef = useRef<number | null>(null);
+
 
   useEffect(() => {
     let alive = true;
@@ -292,13 +300,14 @@ function NeonSlither() {
     const ok = await showRewardedAd();
     // Reward is granted only when the platform reports success === true.
     if (ok) {
-      setCoins((c) => c + 250);
-      setAdMsg("+250 CDC granted");
+      setCoins((c) => c + 20);
+      setAdMsg("+20 CDC granted");
     } else {
       setAdMsg("No reward — ad not completed or unavailable here.");
     }
     setAdBusy(false);
   };
+
 
 
   // Resize
@@ -386,10 +395,16 @@ function NeonSlither() {
   };
 
   const startGame = () => {
+    // A pending run result is committed before a fresh game starts.
+    finalizePending();
+    reviveUsedRef.current = false;
+    setReviveUsed(false);
+    setReviveMsg(null);
     const s = stateRef.current;
     const map = MAPS.find(m => m.id === selectedMap) || MAPS[0];
     WORLD = map.world;
     const skin = SKINS.find(sk => sk.id === selectedSkin) || SKINS[0];
+
     s.player = new Snake(WORLD/2, WORLD/2, skin.palette, true, 20);
     s.player.baseSpeed = settings.baseSpeed;
     s.player.boostMult = settings.boostMultiplier;
@@ -418,6 +433,39 @@ function NeonSlither() {
     setScreen("playing");
   };
 
+  // Commit a run result: coins, best, score log, tournament report.
+  const finalizeRun = (finalLen: number) => {
+    // Reward CiDiCoin: 1 CDC per 4 length earned
+    const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
+    if (earned > 0) setCoins(c => c + earned);
+    setBest(prev => {
+      if (finalLen > prev) {
+        try { localStorage.setItem("neonSlither4DBest", String(finalLen)); } catch {}
+        setNewBest(true);
+        return finalLen;
+      }
+      return prev;
+    });
+    // Update leaderboard (top 10)
+    const name = (playerName || "PLAYER").slice(0, 12).toUpperCase();
+    setLeaderboard(prev => {
+      const next = [...prev, { score: finalLen, date: Date.now(), name }]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+      try { localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next)); } catch {}
+      return next;
+    });
+    // CiDi tournament ranking: report only once the run result is final.
+    void reportTournamentScore(finalLen);
+  };
+
+  // Commit a run that was held open while a revive was on offer.
+  const finalizePending = () => {
+    const pending = pendingRunRef.current;
+    pendingRunRef.current = null;
+    if (pending !== null) finalizeRun(pending);
+  };
+
   const endGame = () => {
     const s = stateRef.current;
     if (!s.player) return;
@@ -427,28 +475,60 @@ function NeonSlither() {
     s.shake = 30;
     const finalLen = Math.floor(s.player.length);
     setScore(finalLen);
-    // Reward CiDiCoin: 1 CDC per 4 length earned
-    const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
-    if (earned > 0) setCoins(c => c + earned);
-    if (finalLen > best) {
-      setBest(finalLen);
-      localStorage.setItem("neonSlither4DBest", String(finalLen));
-      setNewBest(true);
+    if (reviveUsedRef.current) {
+      // No revive left — the run is final now.
+      finalizeRun(finalLen);
+    } else {
+      // Hold the result until the player declines the ad-revive.
+      pendingRunRef.current = finalLen;
     }
-    // Update leaderboard (top 10)
-    try {
-      const name = (playerName || "PLAYER").slice(0, 12).toUpperCase();
-      const next = [...leaderboard, { score: finalLen, date: Date.now(), name }]
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10);
-      setLeaderboard(next);
-      localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next));
-    } catch {}
-    // CiDi tournament ranking: report only once the run result is final.
-    void reportTournamentScore(finalLen);
     setTimeout(() => setScreen("over"), 800);
-
   };
+
+  // Watch an ad to continue the current run from where it ended. Once per game.
+  const reviveWithAd = async () => {
+    if (reviveUsedRef.current || reviveBusy) return;
+    setReviveBusy(true);
+    setReviveMsg(null);
+    const ok = await showRewardedAd();
+    setReviveBusy(false);
+    if (!ok) {
+      setReviveMsg("No continue — ad not completed or unavailable here.");
+      return;
+    }
+    reviveUsedRef.current = true;
+    setReviveUsed(true);
+    pendingRunRef.current = null;
+    setReviveMsg(null);
+
+    const s = stateRef.current;
+    const len = Math.max(20, score);
+    const skin = SKINS.find(sk => sk.id === selectedSkin) || SKINS[0];
+    // Respawn at a spot clear of every living AI head.
+    let px = WORLD / 2, py = WORLD / 2;
+    for (let t = 0; t < 80; t++) {
+      const x = 200 + Math.random() * (WORLD - 400);
+      const y = 200 + Math.random() * (WORLD - 400);
+      const clear = s.ais.every(ai => !ai.alive || (ai.head().x - x) ** 2 + (ai.head().y - y) ** 2 > 420 * 420);
+      if (clear) { px = x; py = y; break; }
+    }
+    const p = new Snake(px, py, skin.palette, true, len);
+    p.baseSpeed = settings.baseSpeed;
+    p.boostMult = settings.boostMultiplier;
+    p.turnRate = settings.turnRate;
+    s.player = p;
+    s.cam = { x: px, y: py };
+    s.shake = 0;
+    s.hitFlash = 0;
+    s.particles = [];
+    s.running = true;
+    s.paused = false;
+    s.last = performance.now();
+    setScore(len);
+    setPaused(false);
+    setScreen("playing");
+  };
+
 
   // Input
   useEffect(() => {
@@ -1087,10 +1167,10 @@ function NeonSlither() {
                 disabled={adBusy}
                 className="w-full rounded-lg bg-gradient-to-r from-lime-400 to-emerald-500 px-4 py-2 text-sm font-bold tracking-wider text-black transition hover:scale-[1.02] disabled:opacity-60"
               >
-                {adBusy ? "LOADING AD…" : "WATCH AD · +250 CDC"}
+                {adBusy ? "LOADING AD…" : "WATCH AD · +20 CDC"}
               </button>
               <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
-                Watch a short video to earn 250 CDC. Reward is granted after the ad completes.
+                Watch a short video to earn 20 CDC. Reward is granted after the ad completes.
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
             </div>
@@ -1308,14 +1388,31 @@ function NeonSlither() {
                 </ol>
               </div>
             )}
+            {!reviveUsed && (
+              <div className="mb-3">
+                <button
+                  onClick={reviveWithAd}
+                  disabled={reviveBusy}
+                  className="w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-lime-400 to-emerald-500 text-black font-black tracking-wider transition hover:scale-[1.01] disabled:opacity-60"
+                  style={{ boxShadow: "0 0 30px rgba(0,255,159,0.45)" }}
+                >
+                  {reviveBusy ? "LOADING AD…" : "WATCH AD · CONTINUE RUN"}
+                </button>
+                <p className="mt-2 text-[10px] tracking-widest text-lime-200/70">
+                  ONE CONTINUE PER GAME · KEEPS YOUR LENGTH OF {score}
+                </p>
+                {reviveMsg && <div className="mt-1 text-[11px] text-lime-200/90">{reviveMsg}</div>}
+              </div>
+            )}
             <div className="flex gap-3">
               <button onClick={startGame} className="flex-1 px-6 py-4 bg-cyan-400 hover:bg-white text-black font-black rounded-2xl tracking-wider transition" style={{ boxShadow: "0 0 30px rgba(0,249,255,0.5)" }}>
                 PLAY AGAIN
               </button>
-              <button onClick={() => setScreen("start")} className="flex-1 px-6 py-4 border border-white/30 hover:bg-white/10 font-bold rounded-2xl tracking-wider transition">
+              <button onClick={() => { finalizePending(); setScreen("start"); }} className="flex-1 px-6 py-4 border border-white/30 hover:bg-white/10 font-bold rounded-2xl tracking-wider transition">
                 MENU
               </button>
             </div>
+
           </div>
           </div>
         </div>
