@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import cyberBanner from "@/assets/images/cyber_grid_banner.jpg.asset.json";
 import snakeIcon from "@/assets/images/neon_snake_icon.jpg.asset.json";
@@ -185,7 +185,7 @@ function NeonSlither() {
   const [panel, setPanel] = useState<"none" | "settings" | "skins" | "maps">("none");
 
   const [storageReady, setStorageReady] = useState(false);
-  const [cidi, setCidi] = useState<CidiStatus | null>(null);
+  const [, setCidi] = useState<CidiStatus | null>(null);
   const [adMsg, setAdMsg] = useState<string | null>(null);
   const [adBusy, setAdBusy] = useState(false);
 
