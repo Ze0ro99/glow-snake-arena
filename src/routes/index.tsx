@@ -1167,10 +1167,10 @@ function NeonSlither() {
                 disabled={adBusy}
                 className="w-full rounded-lg bg-gradient-to-r from-lime-400 to-emerald-500 px-4 py-2 text-sm font-bold tracking-wider text-black transition hover:scale-[1.02] disabled:opacity-60"
               >
-                {adBusy ? "LOADING AD…" : "WATCH AD · +250 CDC"}
+                {adBusy ? "LOADING AD…" : "WATCH AD · +20 CDC"}
               </button>
               <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
-                Watch a short video to earn 250 CDC. Reward is granted after the ad completes.
+                Watch a short video to earn 20 CDC. Reward is granted after the ad completes.
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
             </div>
