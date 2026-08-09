@@ -1388,14 +1388,31 @@ function NeonSlither() {
                 </ol>
               </div>
             )}
+            {!reviveUsed && (
+              <div className="mb-3">
+                <button
+                  onClick={reviveWithAd}
+                  disabled={reviveBusy}
+                  className="w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-lime-400 to-emerald-500 text-black font-black tracking-wider transition hover:scale-[1.01] disabled:opacity-60"
+                  style={{ boxShadow: "0 0 30px rgba(0,255,159,0.45)" }}
+                >
+                  {reviveBusy ? "LOADING AD…" : "WATCH AD · CONTINUE RUN"}
+                </button>
+                <p className="mt-2 text-[10px] tracking-widest text-lime-200/70">
+                  ONE CONTINUE PER GAME · KEEPS YOUR LENGTH OF {score}
+                </p>
+                {reviveMsg && <div className="mt-1 text-[11px] text-lime-200/90">{reviveMsg}</div>}
+              </div>
+            )}
             <div className="flex gap-3">
               <button onClick={startGame} className="flex-1 px-6 py-4 bg-cyan-400 hover:bg-white text-black font-black rounded-2xl tracking-wider transition" style={{ boxShadow: "0 0 30px rgba(0,249,255,0.5)" }}>
                 PLAY AGAIN
               </button>
-              <button onClick={() => setScreen("start")} className="flex-1 px-6 py-4 border border-white/30 hover:bg-white/10 font-bold rounded-2xl tracking-wider transition">
+              <button onClick={() => { finalizePending(); setScreen("start"); }} className="flex-1 px-6 py-4 border border-white/30 hover:bg-white/10 font-bold rounded-2xl tracking-wider transition">
                 MENU
               </button>
             </div>
+
           </div>
           </div>
         </div>
