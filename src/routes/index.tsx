@@ -245,6 +245,14 @@ function NeonSlither() {
   const [, setCidi] = useState<CidiStatus | null>(null);
   const [adMsg, setAdMsg] = useState<string | null>(null);
   const [adBusy, setAdBusy] = useState(false);
+  // Ad-revive: allowed once per game.
+  const [reviveUsed, setReviveUsed] = useState(false);
+  const [reviveBusy, setReviveBusy] = useState(false);
+  const [reviveMsg, setReviveMsg] = useState<string | null>(null);
+  const reviveUsedRef = useRef(false);
+  // Final length of a run whose result is not committed yet (a revive is still offered).
+  const pendingRunRef = useRef<number | null>(null);
+
 
   useEffect(() => {
     let alive = true;
