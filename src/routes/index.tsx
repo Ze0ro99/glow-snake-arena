@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import cyberBanner from "@/assets/images/cyber_grid_banner.jpg.asset.json";
 import snakeIcon from "@/assets/images/neon_snake_icon.jpg.asset.json";
@@ -185,7 +185,7 @@ function NeonSlither() {
   const [panel, setPanel] = useState<"none" | "settings" | "skins" | "maps">("none");
 
   const [storageReady, setStorageReady] = useState(false);
-  const [cidi, setCidi] = useState<CidiStatus | null>(null);
+  const [, setCidi] = useState<CidiStatus | null>(null);
   const [adMsg, setAdMsg] = useState<string | null>(null);
   const [adBusy, setAdBusy] = useState(false);
 
@@ -1022,16 +1022,9 @@ function NeonSlither() {
               <span>◎ {coins}</span>
             </div>
 
-            {/* CiDi Games platform: rewarded ad + integration status */}
+            {/* Rewarded ad → CiDiCoin */}
             <div className="mt-4 rounded-xl border border-lime-400/30 bg-black/40 p-3 text-left">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="text-[10px] tracking-[0.3em] text-lime-300/80">CIDI GAMES</div>
-                <div className="text-[9px] tracking-widest text-gray-400">
-                  {cidi
-                    ? `${cidi.adsReady ? "ADS" : "ADS·OFF"} · ${cidi.loggedIn ? "SIGNED IN" : cidi.hasTempToken ? "TOKEN" : "GUEST"}`
-                    : "LOADING…"}
-                </div>
-              </div>
+              <div className="mb-2 text-[10px] tracking-[0.3em] text-lime-300/80">FREE CIDICOIN</div>
               <button
                 onClick={watchAd}
                 disabled={adBusy}
@@ -1040,18 +1033,11 @@ function NeonSlither() {
                 {adBusy ? "LOADING AD…" : "WATCH AD · +250 CDC"}
               </button>
               <p className="mt-2 text-[10px] leading-relaxed text-lime-200/70">
-                Rewarded ad served by CiDi Games. Credits are granted only after a
-                verified ad completion.
+                Watch a short video to earn 250 CDC. Reward is granted after the ad completes.
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
-              <Link
-                to="/cidi-setup"
-                className="mt-3 block text-center text-[10px] tracking-[0.25em] text-lime-300/70 underline decoration-dotted hover:text-lime-200"
-              >
-                INTEGRATION CHECK
-              </Link>
-
             </div>
+
 
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
