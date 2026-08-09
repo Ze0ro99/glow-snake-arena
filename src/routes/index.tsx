@@ -300,13 +300,14 @@ function NeonSlither() {
     const ok = await showRewardedAd();
     // Reward is granted only when the platform reports success === true.
     if (ok) {
-      setCoins((c) => c + 250);
-      setAdMsg("+250 CDC granted");
+      setCoins((c) => c + 20);
+      setAdMsg("+20 CDC granted");
     } else {
       setAdMsg("No reward — ad not completed or unavailable here.");
     }
     setAdBusy(false);
   };
+
 
 
   // Resize
