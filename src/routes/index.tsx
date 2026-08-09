@@ -395,10 +395,16 @@ function NeonSlither() {
   };
 
   const startGame = () => {
+    // A pending run result is committed before a fresh game starts.
+    finalizePending();
+    reviveUsedRef.current = false;
+    setReviveUsed(false);
+    setReviveMsg(null);
     const s = stateRef.current;
     const map = MAPS.find(m => m.id === selectedMap) || MAPS[0];
     WORLD = map.world;
     const skin = SKINS.find(sk => sk.id === selectedSkin) || SKINS[0];
+
     s.player = new Snake(WORLD/2, WORLD/2, skin.palette, true, 20);
     s.player.baseSpeed = settings.baseSpeed;
     s.player.boostMult = settings.boostMultiplier;
