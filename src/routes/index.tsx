@@ -427,6 +427,39 @@ function NeonSlither() {
     setScreen("playing");
   };
 
+  // Commit a run result: coins, best, score log, tournament report.
+  const finalizeRun = (finalLen: number) => {
+    // Reward CiDiCoin: 1 CDC per 4 length earned
+    const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
+    if (earned > 0) setCoins(c => c + earned);
+    setBest(prev => {
+      if (finalLen > prev) {
+        try { localStorage.setItem("neonSlither4DBest", String(finalLen)); } catch {}
+        setNewBest(true);
+        return finalLen;
+      }
+      return prev;
+    });
+    // Update leaderboard (top 10)
+    const name = (playerName || "PLAYER").slice(0, 12).toUpperCase();
+    setLeaderboard(prev => {
+      const next = [...prev, { score: finalLen, date: Date.now(), name }]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+      try { localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next)); } catch {}
+      return next;
+    });
+    // CiDi tournament ranking: report only once the run result is final.
+    void reportTournamentScore(finalLen);
+  };
+
+  // Commit a run that was held open while a revive was on offer.
+  const finalizePending = () => {
+    const pending = pendingRunRef.current;
+    pendingRunRef.current = null;
+    if (pending !== null) finalizeRun(pending);
+  };
+
   const endGame = () => {
     const s = stateRef.current;
     if (!s.player) return;
@@ -436,28 +469,60 @@ function NeonSlither() {
     s.shake = 30;
     const finalLen = Math.floor(s.player.length);
     setScore(finalLen);
-    // Reward CiDiCoin: 1 CDC per 4 length earned
-    const earned = Math.max(0, Math.floor((finalLen - 20) / 4));
-    if (earned > 0) setCoins(c => c + earned);
-    if (finalLen > best) {
-      setBest(finalLen);
-      localStorage.setItem("neonSlither4DBest", String(finalLen));
-      setNewBest(true);
+    if (reviveUsedRef.current) {
+      // No revive left — the run is final now.
+      finalizeRun(finalLen);
+    } else {
+      // Hold the result until the player declines the ad-revive.
+      pendingRunRef.current = finalLen;
     }
-    // Update leaderboard (top 10)
-    try {
-      const name = (playerName || "PLAYER").slice(0, 12).toUpperCase();
-      const next = [...leaderboard, { score: finalLen, date: Date.now(), name }]
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10);
-      setLeaderboard(next);
-      localStorage.setItem("neonSlither4DLeaderboard", JSON.stringify(next));
-    } catch {}
-    // CiDi tournament ranking: report only once the run result is final.
-    void reportTournamentScore(finalLen);
     setTimeout(() => setScreen("over"), 800);
-
   };
+
+  // Watch an ad to continue the current run from where it ended. Once per game.
+  const reviveWithAd = async () => {
+    if (reviveUsedRef.current || reviveBusy) return;
+    setReviveBusy(true);
+    setReviveMsg(null);
+    const ok = await showRewardedAd();
+    setReviveBusy(false);
+    if (!ok) {
+      setReviveMsg("No continue — ad not completed or unavailable here.");
+      return;
+    }
+    reviveUsedRef.current = true;
+    setReviveUsed(true);
+    pendingRunRef.current = null;
+    setReviveMsg(null);
+
+    const s = stateRef.current;
+    const len = Math.max(20, score);
+    const skin = SKINS.find(sk => sk.id === selectedSkin) || SKINS[0];
+    // Respawn at a spot clear of every living AI head.
+    let px = WORLD / 2, py = WORLD / 2;
+    for (let t = 0; t < 80; t++) {
+      const x = 200 + Math.random() * (WORLD - 400);
+      const y = 200 + Math.random() * (WORLD - 400);
+      const clear = s.ais.every(ai => !ai.alive || (ai.head().x - x) ** 2 + (ai.head().y - y) ** 2 > 420 * 420);
+      if (clear) { px = x; py = y; break; }
+    }
+    const p = new Snake(px, py, skin.palette, true, len);
+    p.baseSpeed = settings.baseSpeed;
+    p.boostMult = settings.boostMultiplier;
+    p.turnRate = settings.turnRate;
+    s.player = p;
+    s.cam = { x: px, y: py };
+    s.shake = 0;
+    s.hitFlash = 0;
+    s.particles = [];
+    s.running = true;
+    s.paused = false;
+    s.last = performance.now();
+    setScore(len);
+    setPaused(false);
+    setScreen("playing");
+  };
+
 
   // Input
   useEffect(() => {
