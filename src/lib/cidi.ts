@@ -15,6 +15,9 @@ const CIDI_SDK_URL = "https://app.cidi.games/sdk/cidi-sdk.js";
 const CIDI_PROXY_SDK_URL =
   "https://elf-resource.cidi.games/sdk/cidi-proxy-sdk.umd.js";
 const DEFAULT_BASE_URL = "https://elf-proxy.cidi.games/api/v1";
+// Public App Key from the Developer Center (client credential).
+// The API Secret / Callback Secret are server-side only and never appear here.
+const DEFAULT_API_KEY = "CIDI_13974AFA26BC4EE5";
 
 type RewardedAdResult = { success?: boolean } | null | undefined;
 
@@ -67,7 +70,8 @@ let client: CidiProxyClient | null = null;
 let initPromise: Promise<CidiStatus> | null = null;
 
 function apiKey(): string {
-  return (import.meta.env.VITE_CIDI_API_KEY as string | undefined) ?? "";
+  const fromEnv = (import.meta.env.VITE_CIDI_API_KEY as string | undefined)?.trim();
+  return fromEnv || DEFAULT_API_KEY;
 }
 
 function baseUrl(): string {
