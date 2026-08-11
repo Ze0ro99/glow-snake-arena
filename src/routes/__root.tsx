@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import snakeIcon from "../assets/images/neon_snake_icon.jpg.asset.json";
+import { initCidi } from "../lib/cidi";
+
 
 function NotFoundComponent() {
   return (
