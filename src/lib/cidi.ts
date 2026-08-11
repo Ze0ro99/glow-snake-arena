@@ -147,8 +147,9 @@ export function initCidi(): Promise<CidiStatus> {
             baseURL: baseUrl(),
             apiKey: apiKey(),
           }) ?? null;
-        // Login is required before any reporting call, and must re-run per page load.
-        if (client && status.hasTempToken) {
+        // The SDK reads tempToken from window.location.search itself, so login()
+        // is always attempted (once per page load) rather than pre-gated locally.
+        if (client) {
           status.loggedIn = (await client.auth.login()) === true;
         }
       } catch (e) {
@@ -156,6 +157,7 @@ export function initCidi(): Promise<CidiStatus> {
         status.error = err?.code ?? err?.message ?? "CiDi login failed";
       }
     }
+
     return { ...status };
   })();
   return initPromise;
