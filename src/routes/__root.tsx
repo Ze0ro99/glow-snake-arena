@@ -133,6 +133,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Platform SDK must init (and login) on every page load, before storage use.
+  useEffect(() => {
+    void initCidi();
+  }, []);
+
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
