@@ -29,6 +29,7 @@ type CidiProxyClient = {
       reportedAt: number;
       callbackUrl?: string;
     }) => Promise<boolean>;
+    refreshTournamentScore: (input: { score: string }) => void;
     gameTask: (input: unknown) => Promise<boolean>;
     gameTaskResult: (input: unknown) => Promise<unknown>;
     medal: (input?: unknown) => Promise<boolean>;
@@ -174,6 +175,22 @@ export async function showRewardedAd(timeout = 30000): Promise<boolean> {
     return result?.success === true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Durable score update (Tournament SDK `refreshTournamentScore`).
+ * Synchronous, best-effort: the SDK persists the latest score locally and
+ * sends it after login, so nothing is lost when login isn't ready yet.
+ */
+export function refreshTournamentScore(score: number): void {
+  if (!client) return;
+  try {
+    client.report.refreshTournamentScore?.({
+      score: String(Math.max(0, Math.floor(score))),
+    });
+  } catch {
+    // STORAGE_UNAVAILABLE / STORAGE_WRITE_FAILED / INVALID_SCORE — never break play.
   }
 }
 
