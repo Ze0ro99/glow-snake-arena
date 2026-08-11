@@ -6,7 +6,13 @@ import gameplay1 from "@/assets/images/snake_gameplay.jpg.asset.json";
 import gameplay2 from "@/assets/images/snake_gameplay_2.jpg.asset.json";
 import gameplay3 from "@/assets/images/snake_gameplay_3.jpg.asset.json";
 import tournamentBanner from "@/assets/images/tournament_banner.jpg.asset.json";
-import { initCidi, showRewardedAd, reportTournamentScore, type CidiStatus } from "@/lib/cidi";
+import {
+  initCidi,
+  showRewardedAd,
+  reportTournamentScore,
+  refreshTournamentScore,
+  type CidiStatus,
+} from "@/lib/cidi";
 
 
 export const Route = createFileRoute("/")({
@@ -456,6 +462,7 @@ function NeonSlither() {
       return next;
     });
     // CiDi tournament ranking: report only once the run result is final.
+    refreshTournamentScore(finalLen);
     void reportTournamentScore(finalLen);
   };
 
