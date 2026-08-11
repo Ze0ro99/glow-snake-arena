@@ -70,7 +70,8 @@ let client: CidiProxyClient | null = null;
 let initPromise: Promise<CidiStatus> | null = null;
 
 function apiKey(): string {
-  return (import.meta.env.VITE_CIDI_API_KEY as string | undefined) ?? "";
+  const fromEnv = (import.meta.env.VITE_CIDI_API_KEY as string | undefined)?.trim();
+  return fromEnv || DEFAULT_API_KEY;
 }
 
 function baseUrl(): string {
