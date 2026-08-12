@@ -268,6 +268,11 @@ function NeonSlither() {
   // Final length of a run whose result is not committed yet (a revive is still offered).
   const pendingRunRef = useRef<number | null>(null);
 
+  // Platform daily task + medal progress
+  const [dailyPoints, setDailyPoints] = useState(0);
+  const [taskDone, setTaskDone] = useState(false);
+  const [medalOwned, setMedalOwned] = useState(false);
+  const dailyRef = useRef({ date: bizDate(), points: 0, reported: false });
 
   useEffect(() => {
     let alive = true;
@@ -297,10 +302,72 @@ function NeonSlither() {
       if (!isNaN(c)) setCoins(c);
       const mp = localStorage.getItem("neonSlither4DMap");
       if (mp) setSelectedMap(mp);
+      // Daily task progress (resets each platform business date)
+      const today = bizDate();
+      try {
+        const d = JSON.parse(localStorage.getItem("neonSlither4DDaily") || "null");
+        if (d && d.date === today) {
+          dailyRef.current = { date: today, points: d.points || 0, reported: !!d.reported };
+          setDailyPoints(d.points || 0);
+          setTaskDone(!!d.reported);
+        } else {
+          dailyRef.current = { date: today, points: 0, reported: false };
+        }
+      } catch {}
       setStorageReady(true);
+
+      // Platform state: confirm today's task + medal ownership.
+      void getGameTaskResult(today).then((res) => {
+        if (!alive || !res) return;
+        if (res.completed || res.reported) {
+          dailyRef.current.reported = true;
+          setTaskDone(true);
+          persistDaily();
+        }
+      });
+      void getMedalOwnership().then((owned) => {
+        if (alive && owned) setMedalOwned(true);
+      });
     });
     return () => { alive = false; };
   }, []);
+
+  const persistDaily = () => {
+    try {
+      localStorage.setItem("neonSlither4DDaily", JSON.stringify(dailyRef.current));
+    } catch {}
+  };
+
+  /** Accumulate daily points and report the platform daily task once per day. */
+  const addDailyProgress = (points: number) => {
+    const today = bizDate();
+    if (dailyRef.current.date !== today) {
+      dailyRef.current = { date: today, points: 0, reported: false };
+      setTaskDone(false);
+    }
+    dailyRef.current.points += Math.max(0, Math.floor(points));
+    setDailyPoints(dailyRef.current.points);
+    persistDaily();
+    if (dailyRef.current.points >= DAILY_TASK_TARGET && !dailyRef.current.reported) {
+      dailyRef.current.reported = true;
+      persistDaily();
+      void reportGameTask({ points: dailyRef.current.points, bizDate: today }).then((ok) => {
+        if (ok) setTaskDone(true);
+        else {
+          // Allow a later retry when the platform did not accept the report.
+          dailyRef.current.reported = false;
+          persistDaily();
+        }
+      });
+    }
+  };
+
+  // Medal: "Open 30 snake skins" — claim once the condition is met.
+  useEffect(() => {
+    if (!storageReady || medalOwned) return;
+    if (ownedSkins.length < MEDAL_SKIN_TARGET) return;
+    void claimMedal().then((ok) => { if (ok) setMedalOwned(true); });
+  }, [ownedSkins, storageReady, medalOwned]);
 
   // Persist settings/skin/map (only after the SDK-gated storage init completed)
   useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings, storageReady]);
