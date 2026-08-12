@@ -540,6 +540,8 @@ function NeonSlither() {
     // CiDi tournament ranking: report only once the run result is final.
     refreshTournamentScore(finalLen);
     void reportTournamentScore(finalLen);
+    // CiDi daily task: "Earn 1000 points in total".
+    addDailyProgress(finalLen);
   };
 
   // Commit a run that was held open while a revive was on offer.
