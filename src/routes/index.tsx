@@ -11,8 +11,17 @@ import {
   showRewardedAd,
   reportTournamentScore,
   refreshTournamentScore,
+  reportGameTask,
+  getGameTaskResult,
+  claimMedal,
+  getMedalOwnership,
+  bizDate,
   type CidiStatus,
 } from "@/lib/cidi";
+
+// Platform activity goals (must match the Developer Center configuration).
+const DAILY_TASK_TARGET = 1000; // "Earn 1000 points in total"
+const MEDAL_SKIN_TARGET = 30; // "Open 30 snake skins"
 
 
 export const Route = createFileRoute("/")({
