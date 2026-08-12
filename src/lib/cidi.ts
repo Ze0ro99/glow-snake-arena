@@ -196,23 +196,97 @@ export function refreshTournamentScore(score: number): void {
   }
 }
 
-/** Report a finished run to the CiDi tournament ranking. Safe no-op when offline. */
-export async function reportTournamentScore(score: number): Promise<boolean> {
+/** Ensure a login session exists before calling a reporting API. */
+async function ensureLogin(): Promise<boolean> {
   await initCidi();
   if (!client) return false;
+  if (status.loggedIn) return true;
+  if (!status.hasTempToken) return false;
   try {
-    if (!status.loggedIn) {
-      if (!status.hasTempToken) return false;
-      status.loggedIn = (await client.auth.login()) === true;
-      if (!status.loggedIn) return false;
-    }
+    status.loggedIn = (await client.auth.login()) === true;
+  } catch {
+    status.loggedIn = false;
+  }
+  return status.loggedIn;
+}
+
+/** Report a finished run to the CiDi tournament ranking. Safe no-op when offline. */
+export async function reportTournamentScore(score: number): Promise<boolean> {
+  if (!(await ensureLogin())) return false;
+  try {
     return (
-      (await client.report.tournamentScore({
+      (await client!.report.tournamentScore({
         score: String(Math.max(0, Math.floor(score))),
         reportedAt: Math.floor(Date.now() / 1000),
       })) === true
     );
   } catch {
     return false;
+  }
+}
+
+/** Platform business date (yyyyMMdd) used by the Task SDK. */
+export function bizDate(d = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+}
+
+/**
+ * Task SDK — report completion of the daily task
+ * ("Earn 1000 points in total"). Safe no-op when offline.
+ */
+export async function reportGameTask(metadata?: Record<string, unknown>): Promise<boolean> {
+  if (!(await ensureLogin())) return false;
+  try {
+    return (
+      (await client!.report.gameTask({
+        completeTime: Math.floor(Date.now() / 1000),
+        metadata: JSON.stringify(metadata ?? {}),
+      })) === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+export type GameTaskResult = {
+  bizDate: string;
+  reported: boolean;
+  completed: boolean;
+  reportId: string | null;
+  reportStatus: "PROCESSING" | "SUCCESS" | "FAILED" | null;
+  resultCode: string | null;
+  resultMessage: string | null;
+};
+
+/** Task SDK — query today's (or a given bizDate's) daily task result. */
+export async function getGameTaskResult(date = bizDate()): Promise<GameTaskResult | null> {
+  if (!(await ensureLogin())) return null;
+  try {
+    const res = await client!.report.gameTaskResult({ bizDate: date });
+    return (res as GameTaskResult) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Medal SDK — claim the game medal ("Open 30 snake skins"). */
+export async function claimMedal(): Promise<boolean> {
+  if (!(await ensureLogin())) return false;
+  try {
+    return (await client!.report.medal()) === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Medal SDK — query whether the player already owns the medal. */
+export async function getMedalOwnership(): Promise<boolean | null> {
+  if (!(await ensureLogin())) return null;
+  try {
+    const res = (await client!.report.medalOwnership()) as { owned?: boolean } | null;
+    return res?.owned === true;
+  } catch {
+    return null;
   }
 }
