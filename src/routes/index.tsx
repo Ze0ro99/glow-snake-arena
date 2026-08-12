@@ -11,8 +11,17 @@ import {
   showRewardedAd,
   reportTournamentScore,
   refreshTournamentScore,
+  reportGameTask,
+  getGameTaskResult,
+  claimMedal,
+  getMedalOwnership,
+  bizDate,
   type CidiStatus,
 } from "@/lib/cidi";
+
+// Platform activity goals (must match the Developer Center configuration).
+const DAILY_TASK_TARGET = 1000; // "Earn 1000 points in total"
+const MEDAL_SKIN_TARGET = 30; // "Open 30 snake skins"
 
 
 export const Route = createFileRoute("/")({
@@ -259,6 +268,11 @@ function NeonSlither() {
   // Final length of a run whose result is not committed yet (a revive is still offered).
   const pendingRunRef = useRef<number | null>(null);
 
+  // Platform daily task + medal progress
+  const [dailyPoints, setDailyPoints] = useState(0);
+  const [taskDone, setTaskDone] = useState(false);
+  const [medalOwned, setMedalOwned] = useState(false);
+  const dailyRef = useRef({ date: bizDate(), points: 0, reported: false });
 
   useEffect(() => {
     let alive = true;
@@ -288,10 +302,72 @@ function NeonSlither() {
       if (!isNaN(c)) setCoins(c);
       const mp = localStorage.getItem("neonSlither4DMap");
       if (mp) setSelectedMap(mp);
+      // Daily task progress (resets each platform business date)
+      const today = bizDate();
+      try {
+        const d = JSON.parse(localStorage.getItem("neonSlither4DDaily") || "null");
+        if (d && d.date === today) {
+          dailyRef.current = { date: today, points: d.points || 0, reported: !!d.reported };
+          setDailyPoints(d.points || 0);
+          setTaskDone(!!d.reported);
+        } else {
+          dailyRef.current = { date: today, points: 0, reported: false };
+        }
+      } catch {}
       setStorageReady(true);
+
+      // Platform state: confirm today's task + medal ownership.
+      void getGameTaskResult(today).then((res) => {
+        if (!alive || !res) return;
+        if (res.completed || res.reported) {
+          dailyRef.current.reported = true;
+          setTaskDone(true);
+          persistDaily();
+        }
+      });
+      void getMedalOwnership().then((owned) => {
+        if (alive && owned) setMedalOwned(true);
+      });
     });
     return () => { alive = false; };
   }, []);
+
+  const persistDaily = () => {
+    try {
+      localStorage.setItem("neonSlither4DDaily", JSON.stringify(dailyRef.current));
+    } catch {}
+  };
+
+  /** Accumulate daily points and report the platform daily task once per day. */
+  const addDailyProgress = (points: number) => {
+    const today = bizDate();
+    if (dailyRef.current.date !== today) {
+      dailyRef.current = { date: today, points: 0, reported: false };
+      setTaskDone(false);
+    }
+    dailyRef.current.points += Math.max(0, Math.floor(points));
+    setDailyPoints(dailyRef.current.points);
+    persistDaily();
+    if (dailyRef.current.points >= DAILY_TASK_TARGET && !dailyRef.current.reported) {
+      dailyRef.current.reported = true;
+      persistDaily();
+      void reportGameTask({ points: dailyRef.current.points, bizDate: today }).then((ok) => {
+        if (ok) setTaskDone(true);
+        else {
+          // Allow a later retry when the platform did not accept the report.
+          dailyRef.current.reported = false;
+          persistDaily();
+        }
+      });
+    }
+  };
+
+  // Medal: "Open 30 snake skins" — claim once the condition is met.
+  useEffect(() => {
+    if (!storageReady || medalOwned) return;
+    if (ownedSkins.length < MEDAL_SKIN_TARGET) return;
+    void claimMedal().then((ok) => { if (ok) setMedalOwned(true); });
+  }, [ownedSkins, storageReady, medalOwned]);
 
   // Persist settings/skin/map (only after the SDK-gated storage init completed)
   useEffect(() => { if (storageReady) localStorage.setItem("neonSlither4DSettings", JSON.stringify(settings)); }, [settings, storageReady]);
@@ -464,6 +540,8 @@ function NeonSlither() {
     // CiDi tournament ranking: report only once the run result is final.
     refreshTournamentScore(finalLen);
     void reportTournamentScore(finalLen);
+    // CiDi daily task: "Earn 1000 points in total".
+    addDailyProgress(finalLen);
   };
 
   // Commit a run that was held open while a revive was on offer.
@@ -1181,6 +1259,32 @@ function NeonSlither() {
               </p>
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
             </div>
+
+            {/* Daily goal + medal progress */}
+            <div className="mt-4 rounded-xl border border-cyan-400/25 bg-black/40 p-3 text-left">
+              <div className="mb-2 flex items-center justify-between text-[10px] tracking-[0.3em] text-cyan-300/80">
+                <span>DAILY GOAL</span>
+                <span className={taskDone ? "text-lime-300" : "text-cyan-200/60"}>
+                  {taskDone ? "COMPLETE" : `${Math.min(dailyPoints, DAILY_TASK_TARGET)}/${DAILY_TASK_TARGET}`}
+                </span>
+              </div>
+              <div className="text-xs text-gray-300">Earn 1000 points in total</div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-all"
+                  style={{ width: `${Math.min(100, (dailyPoints / DAILY_TASK_TARGET) * 100)}%` }}
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-[10px] tracking-[0.3em] text-fuchsia-300/80">
+                <span>MEDAL</span>
+                <span className={medalOwned ? "text-lime-300" : "text-fuchsia-200/60"}>
+                  {medalOwned ? "EARNED" : `${Math.min(ownedSkins.length, MEDAL_SKIN_TARGET)}/${MEDAL_SKIN_TARGET}`}
+                </span>
+              </div>
+              <div className="text-xs text-gray-300">Open 30 snake skins</div>
+            </div>
+
+
 
 
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
