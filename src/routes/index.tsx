@@ -1260,6 +1260,32 @@ function NeonSlither() {
               {adMsg && <div className="mt-2 text-[11px] text-lime-200/90">{adMsg}</div>}
             </div>
 
+            {/* Daily goal + medal progress */}
+            <div className="mt-4 rounded-xl border border-cyan-400/25 bg-black/40 p-3 text-left">
+              <div className="mb-2 flex items-center justify-between text-[10px] tracking-[0.3em] text-cyan-300/80">
+                <span>DAILY GOAL</span>
+                <span className={taskDone ? "text-lime-300" : "text-cyan-200/60"}>
+                  {taskDone ? "COMPLETE" : `${Math.min(dailyPoints, DAILY_TASK_TARGET)}/${DAILY_TASK_TARGET}`}
+                </span>
+              </div>
+              <div className="text-xs text-gray-300">Earn 1000 points in total</div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-500 transition-all"
+                  style={{ width: `${Math.min(100, (dailyPoints / DAILY_TASK_TARGET) * 100)}%` }}
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-[10px] tracking-[0.3em] text-fuchsia-300/80">
+                <span>MEDAL</span>
+                <span className={medalOwned ? "text-lime-300" : "text-fuchsia-200/60"}>
+                  {medalOwned ? "EARNED" : `${Math.min(ownedSkins.length, MEDAL_SKIN_TARGET)}/${MEDAL_SKIN_TARGET}`}
+                </span>
+              </div>
+              <div className="text-xs text-gray-300">Open 30 snake skins</div>
+            </div>
+
+
+
 
             <div className="mt-6 grid grid-cols-2 gap-3 text-left">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3">
